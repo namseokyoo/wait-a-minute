@@ -1,0 +1,113 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Firebase & Security related - CRITICAL FOR SECURITY
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+/ios/firebase_app_id_file.json
+/lib/firebase_options.dart
+.firebase/
+firebase-debug.log
+.firebaserc
+firebase.json
+
+# API Keys and Secrets - CRITICAL FOR SECURITY
+.env
+.env.local
+.env.production
+.env.staging
+*.key
+*.pem
+*.p8
+*.p12
+*.jks
+*.keystore
+keystore.properties
+key.properties
+
+# Additional security exclusions
+*.secrets
+secrets/
+.secrets/
+private/
+.private/
+config/secrets/
+*.certificate
+*.cert
+*.crt
+*.pfx
+
+# Database dumps and backups
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+dump/
+backup/
+
+# Temporary and log files
+tmp/
+temp/
+.tmp/
+.temp/
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Node modules (if any)
+node_modules/
+.npm
+.yarn-integrity
+
+# Environment files
+.env.test
