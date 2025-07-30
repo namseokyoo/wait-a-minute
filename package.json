@@ -1,0 +1,23 @@
+{
+  "name": "wait-a-minute",
+  "version": "1.0.0",
+  "description": "고객 대기 감지 시스템 - 실시간 파란불빛 모니터링 Flutter 앱",
+  "scripts": {
+    "build": "flutter build web --release",
+    "dev": "flutter run -d web-server --web-port 3000",
+    "install-flutter": "git clone https://github.com/flutter/flutter.git -b stable --depth 1 /tmp/flutter && export PATH=\"$PATH:/tmp/flutter/bin\" && flutter doctor && flutter precache",
+    "prebuild": "flutter pub get"
+  },
+  "keywords": [
+    "flutter",
+    "web",
+    "camera",
+    "monitoring",
+    "pwa"
+  ],
+  "author": "namseokyoo",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

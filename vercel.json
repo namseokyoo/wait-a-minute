@@ -1,11 +1,7 @@
 {
-  "name": "wait-a-minute",
-  "version": 2,
-  "buildCommand": "flutter build web --release",
+  "buildCommand": "./build.sh",
   "outputDirectory": "build/web",
-  "installCommand": "flutter pub get",
-  "devCommand": "flutter run -d web-server --web-port 3000",
-  "framework": null,
+  "installCommand": "echo 'Installing Flutter dependencies...'",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -35,7 +31,7 @@
       ]
     },
     {
-      "source": "/(.*)\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)",
+      "source": "/(.*)\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|wasm)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -43,10 +39,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "build/web/**": {
-      "includeFiles": "build/web/**"
-    }
-  }
+  ]
 }

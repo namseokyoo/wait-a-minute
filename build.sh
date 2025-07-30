@@ -1,9 +1,21 @@
 #!/bin/bash
+set -e
 
-# Vercel Build Script for Flutter Web
 echo "🚀 Starting Flutter Web build for Vercel..."
 
-# Install Flutter dependencies
+# Check if Flutter is available
+if ! command -v flutter &> /dev/null; then
+    echo "📥 Installing Flutter..."
+    git clone https://github.com/flutter/flutter.git -b stable --depth 1 /tmp/flutter
+    export PATH="$PATH:/tmp/flutter/bin"
+    flutter doctor --suppress-analytics
+    flutter precache --web
+fi
+
+# Enable web support
+flutter config --enable-web
+
+# Install dependencies
 echo "📦 Installing Flutter dependencies..."
 flutter pub get
 
@@ -11,14 +23,5 @@ flutter pub get
 echo "🔨 Building Flutter web app..."
 flutter build web --release --web-renderer canvaskit
 
-# Ensure the build was successful
-if [ -d "build/web" ]; then
-    echo "✅ Flutter web build completed successfully!"
-    echo "📁 Build output directory: build/web"
-    ls -la build/web/
-else
-    echo "❌ Flutter web build failed!"
-    exit 1
-fi
-
-echo "🎉 Ready for Vercel deployment!"
+echo "✅ Flutter web build completed successfully!"
+echo "🎉 Ready for deployment!"
