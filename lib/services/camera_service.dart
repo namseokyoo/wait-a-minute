@@ -55,6 +55,7 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
   // App lifecycle management
   bool _isAppInBackground = false;
   Timer? _heartbeatTimer;
+  Timer? _webMonitoringTimer;
   int _reconnectAttempts = 0;
   static const int _maxReconnectAttempts = 3;
 
@@ -183,8 +184,14 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
       _isWaitingState = false;
       _previousWaitingState = false;
 
-      // Start image stream for blue light detection
-      await _controller!.startImageStream(_onImageReceived);
+      // Check if running on web and use appropriate monitoring method
+      if (kIsWeb) {
+        // Web: Use periodic photo capture for blue light detection
+        await _startWebMonitoring();
+      } else {
+        // Mobile: Use image stream for real-time detection
+        await _controller!.startImageStream(_onImageReceived);
+      }
       
       // Enable wakelock to keep screen on during monitoring
       await WakelockPlus.enable();
@@ -205,6 +212,113 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Start web monitoring using periodic photo capture
+  Future<void> _startWebMonitoring() async {
+    // Stop any existing timer
+    _webMonitoringTimer?.cancel();
+    
+    // Start periodic monitoring for web (every 500ms)
+    _webMonitoringTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
+      if (!_isMonitoring) {
+        timer.cancel();
+        return;
+      }
+      
+      try {
+        // Capture photo for analysis
+        final image = await _controller!.takePicture();
+        
+        // In web, we'll simulate blue light detection since we can't process raw image data
+        // This is a simplified approach for demonstration
+        await _simulateWebBlueLight();
+        
+      } catch (e) {
+        if (kDebugMode) {
+          print('Web monitoring capture error: $e');
+        }
+      }
+    });
+    
+    if (kDebugMode) {
+      print('Web monitoring started with periodic capture');
+    }
+  }
+
+  /// Simulate blue light detection for web platform
+  Future<void> _simulateWebBlueLight() async {
+    // Since we can't process raw camera data on web, we'll simulate detection
+    // In a real implementation, you might send the image to a server for processing
+    
+    // Simulate varying blue intensity (for demo purposes)
+    final random = DateTime.now().millisecondsSinceEpoch % 100;
+    final simulatedIntensity = (random / 100.0) * 0.3; // Max 30% intensity
+    
+    final previousBlueIntensity = _blueIntensity;
+    _blueIntensity = simulatedIntensity;
+    _previousWaitingState = _isWaitingState;
+    
+    // Simple threshold-based detection for demo
+    _isWaitingState = simulatedIntensity > 0.15; // 15% threshold
+    
+    // Smart update to Firebase based on context
+    final now = DateTime.now();
+    final shouldUpdateFirebase = _updateManager.shouldUpdate(
+      isWaitingState: _isWaitingState,
+      isAppInBackground: _isAppInBackground,
+      blueIntensity: _blueIntensity,
+      previousBlueIntensity: previousBlueIntensity,
+    );
+
+    if (shouldUpdateFirebase && 
+        (_lastFirebaseUpdate == null ||
+         now.difference(_lastFirebaseUpdate!) >= _updateManager.getOptimalUpdateInterval(
+           isWaitingState: _isWaitingState,
+           isAppInBackground: _isAppInBackground,
+         ))) {
+      await _firebaseService.updateDeviceStatus(_deviceId, {
+        'isWaiting': _isWaitingState,
+        'blueIntensity': _blueIntensity,
+        'rawBlueIntensity': _blueIntensity,
+        'sensitivityMultiplier': _sensitivitySettings.multiplier,
+        'confidence': 0.8, // Fixed confidence for web demo
+        'isOnline': _isOnline,
+        'isMonitoring': _isMonitoring,
+        'batteryLevel': _batteryLevel,
+        'isBackground': _isAppInBackground,
+        'platform': 'web', // Mark as web platform
+      });
+      _lastFirebaseUpdate = now;
+    }
+
+    // Check for waiting state change and send notifications
+    if (_previousWaitingState != _isWaitingState) {
+      if (kDebugMode) {
+        print('Web: Waiting state changed: $_previousWaitingState -> $_isWaitingState');
+      }
+
+      // Update shared waiting state service
+      _waitingStateService?.updateWaitingState(
+        _isWaitingState,
+        sourceDeviceId: _deviceId,
+      );
+
+      // Create alert in Firebase (for monitor devices to detect changes)
+      if (_isWaitingState) {
+        await _firebaseService.createAlert(_deviceId, '대기인원 있음 (웹)');
+      }
+    }
+
+    // Always notify listeners for UI updates
+    final uiUpdateThreshold = const Duration(milliseconds: 100);
+    if (_lastUIUpdate == null ||
+        now.difference(_lastUIUpdate!) >= uiUpdateThreshold ||
+        _previousWaitingState != _isWaitingState ||
+        (previousBlueIntensity - _blueIntensity).abs() > 0.01) {
+      notifyListeners();
+      _lastUIUpdate = now;
+    }
+  }
+
   /// Stop monitoring
   Future<void> stopMonitoring() async {
     if (!_isMonitoring) return;
@@ -213,8 +327,12 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
       _isMonitoring = false;
       _blueIntensity = 0.0;
 
-      // Stop image stream
-      if (_controller != null && _controller!.value.isStreamingImages) {
+      // Stop web monitoring timer
+      _webMonitoringTimer?.cancel();
+      _webMonitoringTimer = null;
+
+      // Stop image stream (mobile only)
+      if (!kIsWeb && _controller != null && _controller!.value.isStreamingImages) {
         await _controller!.stopImageStream();
       }
 
@@ -701,6 +819,10 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
     // Stop heartbeat timer
     _stopHeartbeat();
     
+    // Stop web monitoring timer
+    _webMonitoringTimer?.cancel();
+    _webMonitoringTimer = null;
+    
     // Firebase에서 디바이스 제거 (백그라운드에서 수행)
     removeDeviceFromFirebase().catchError((e) {
       if (kDebugMode) {
@@ -745,6 +867,15 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Get blue intensity description for UI
   String getBlueIntensityDescription() {
+    if (kIsWeb) {
+      // Web platform: simplified status
+      if (_isWaitingState) {
+        return '대기인원 있음 (웹 데모)';
+      } else {
+        return '대기인원 없음 (웹 데모)';
+      }
+    }
+    
     if (!_detector.isCalibrated) {
       final stats = _detector.getStatistics();
       final calibrationProgress = (stats['calibrationFrameCount'] as int).clamp(
@@ -768,6 +899,8 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
       return '카메라 초기화 필요';
     } else if (!_isMonitoring) {
       return '모니터링 대기중';
+    } else if (kIsWeb) {
+      return '웹 모니터링 진행중';
     } else if (!_detector.isCalibrated) {
       final stats = _detector.getStatistics();
       final calibrationProgress = (stats['calibrationFrameCount'] as int).clamp(
