@@ -110,31 +110,25 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
       // Use back camera (index 0 is usually back camera)
       final camera = _cameras.first;
 
-      // Initialize camera controller
+      // Initialize camera controller with web compatibility
       _controller = CameraController(
         camera,
         ResolutionPreset.medium,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.yuv420,
+        // Web에서는 imageFormatGroup을 지정하지 않음 (자동 선택)
+        imageFormatGroup: kIsWeb ? null : ImageFormatGroup.yuv420,
       );
 
       await _controller!.initialize();
 
-      // Initialize Firebase Realtime Service
-      await _firebaseService.initialize();
-
-      // Register device info in Firebase
-      await _firebaseService.updateDeviceInfo(_deviceId, {
-        'name': _deviceName,
-        'location': _location,
-        'mode': 'cctv',
-      });
-
       _isInitialized = true;
 
       if (kDebugMode) {
-        print('Camera and Firebase initialized successfully');
+        print('Camera initialized successfully');
       }
+
+      // Initialize Firebase Realtime Service (비동기로 처리, 실패해도 카메라는 작동)
+      _initializeFirebaseAsync();
     } catch (e) {
       _errorMessage = '카메라 초기화 실패: $e';
       if (kDebugMode) {
@@ -145,6 +139,34 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
     _isInitializing = false;
     notifyListeners();
     return _isInitialized;
+  }
+
+  /// Firebase 비동기 초기화 (카메라 초기화와 독립적)
+  Future<void> _initializeFirebaseAsync() async {
+    try {
+      final success = await _firebaseService.initialize();
+      if (success) {
+        // Register device info in Firebase
+        await _firebaseService.updateDeviceInfo(_deviceId, {
+          'name': _deviceName,
+          'location': _location,
+          'mode': 'cctv',
+        });
+        
+        if (kDebugMode) {
+          print('Firebase initialized and device registered successfully');
+        }
+      } else {
+        if (kDebugMode) {
+          print('Firebase initialization failed, but camera will continue to work');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Firebase async initialization error: $e');
+      }
+      // Firebase 실패해도 에러 메시지 설정하지 않음 (카메라는 정상 작동)
+    }
   }
 
   /// Start monitoring with blue light detection

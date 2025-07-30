@@ -40,14 +40,16 @@ class FirebaseInitializationService {
         await Firebase.initializeApp(
           options: WebFirebaseOptions.currentPlatform,
         );
+        if (kDebugMode) {
+          print('FirebaseInitializationService: 웹 Firebase Core 초기화 완료');
+        }
       } else {
         await Firebase.initializeApp();
+        if (kDebugMode) {
+          print('FirebaseInitializationService: 모바일 Firebase Core 초기화 완료');
+        }
       }
       _isFirebaseInitialized = true;
-      
-      if (kDebugMode) {
-        print('FirebaseInitializationService: Firebase Core 초기화 완료');
-      }
       
       _checkAndCompleteInitialization();
       return true;

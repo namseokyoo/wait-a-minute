@@ -25,9 +25,18 @@ class FirebaseRealtimeService extends ChangeNotifier {
     if (_isInitialized) return true;
 
     try {
-      // Wait for Firebase initialization to complete
+      // Wait for Firebase initialization to complete with timeout
       final firebaseInitService = FirebaseInitializationService();
-      final isReady = await firebaseInitService.waitForInitialization();
+      final initializationFuture = firebaseInitService.waitForInitialization();
+      final isReady = await initializationFuture.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          if (kDebugMode) {
+            print('FirebaseRealtimeService: Firebase 초기화 타임아웃');
+          }
+          return false;
+        },
+      );
       
       if (!isReady) {
         if (kDebugMode) {
@@ -36,21 +45,40 @@ class FirebaseRealtimeService extends ChangeNotifier {
         return false;
       }
 
-      // Verify authentication
+      // Verify authentication (웹에서는 익명 인증이 완료되어야 함)
       final user = firebaseInitService.currentUser;
       if (user == null) {
         if (kDebugMode) {
-          print('FirebaseRealtimeService: 인증된 사용자가 없음');
+          print('FirebaseRealtimeService: 인증된 사용자가 없음 - 익명 인증 재시도');
         }
-        return false;
+        // 웹에서 익명 인증 재시도
+        final authSuccess = await firebaseInitService.initializeAuth();
+        if (!authSuccess) {
+          if (kDebugMode) {
+            print('FirebaseRealtimeService: 익명 인증 재시도 실패');
+          }
+          return false;
+        }
       }
 
+      final currentUser = firebaseInitService.currentUser;
       if (kDebugMode) {
-        print('FirebaseRealtimeService: 인증 확인 완료 - ${user.uid}');
+        print('FirebaseRealtimeService: 인증 확인 완료 - ${currentUser?.uid}');
       }
 
-      // Initialize database connection
-      _database = FirebaseDatabase.instance.ref();
+      // Initialize database connection with proper web configuration
+      if (kIsWeb) {
+        _database = FirebaseDatabase.instance.ref();
+        if (kDebugMode) {
+          print('FirebaseRealtimeService: 웹 데이터베이스 연결 설정');
+        }
+      } else {
+        _database = FirebaseDatabase.instance.ref();
+        if (kDebugMode) {
+          print('FirebaseRealtimeService: 모바일 데이터베이스 연결 설정');
+        }
+      }
+      
       _isInitialized = true;
 
       if (kDebugMode) {

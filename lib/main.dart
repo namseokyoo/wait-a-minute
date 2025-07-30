@@ -16,15 +16,24 @@ late LocalNotificationService globalLocalNotificationService;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase using the new initialization service
+  // Initialize Firebase with better error handling for web
   final firebaseInitService = FirebaseInitializationService();
-  final firebaseReady = await firebaseInitService.initializeFully();
+  bool firebaseReady = false;
   
-  if (kDebugMode) {
-    print('Firebase 전체 초기화 결과: $firebaseReady');
+  try {
+    firebaseReady = await firebaseInitService.initializeFully();
+    if (kDebugMode) {
+      print('Firebase 전체 초기화 결과: $firebaseReady');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('Firebase 초기화 중 오류 발생: $e');
+    }
+    // Firebase 실패해도 앱은 계속 실행
+    firebaseReady = false;
   }
 
-  // Initialize unified notification service
+  // Initialize unified notification service (Firebase가 실패해도 실행)
   globalLocalNotificationService = LocalNotificationService();
   try {
     final notificationInitialized = await globalLocalNotificationService.initialize();
@@ -37,11 +46,13 @@ void main() async {
     }
   }
 
-  runApp(const WaitAMinuteApp());
+  runApp(WaitAMinuteApp(firebaseReady: firebaseReady));
 }
 
 class WaitAMinuteApp extends StatelessWidget {
-  const WaitAMinuteApp({super.key});
+  final bool firebaseReady;
+  
+  const WaitAMinuteApp({super.key, required this.firebaseReady});
 
   @override
   Widget build(BuildContext context) {
