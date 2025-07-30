@@ -9,6 +9,7 @@ import 'services/permission_service.dart';
 import 'services/waiting_state_service.dart';
 import 'services/local_notification_service.dart';
 import 'services/firebase_initialization_service.dart';
+import 'firebase_options_web.dart';
 
 // Global notification service instance
 late LocalNotificationService globalLocalNotificationService;

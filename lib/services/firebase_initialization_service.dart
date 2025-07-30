@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../firebase_options_web.dart';
 
 /// Firebase 초기화와 인증을 안전하게 관리하는 서비스
 class FirebaseInitializationService {
@@ -35,7 +36,13 @@ class FirebaseInitializationService {
     if (_isFirebaseInitialized) return true;
 
     try {
-      await Firebase.initializeApp();
+      if (kIsWeb) {
+        await Firebase.initializeApp(
+          options: WebFirebaseOptions.currentPlatform,
+        );
+      } else {
+        await Firebase.initializeApp();
+      }
       _isFirebaseInitialized = true;
       
       if (kDebugMode) {
