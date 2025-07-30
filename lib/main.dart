@@ -9,7 +9,6 @@ import 'services/permission_service.dart';
 import 'services/waiting_state_service.dart';
 import 'services/local_notification_service.dart';
 import 'services/firebase_initialization_service.dart';
-import 'firebase_options_web.dart';
 
 // Global notification service instance
 late LocalNotificationService globalLocalNotificationService;
@@ -113,7 +112,7 @@ class WaitAMinuteApp extends StatelessWidget {
               ),
             ),
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             elevation: 4,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
