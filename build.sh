@@ -19,9 +19,9 @@ flutter config --enable-web
 echo "📦 Installing Flutter dependencies..."
 flutter pub get
 
-# Build web version
+# Build web version with correct Flutter 3.32.8 syntax
 echo "🔨 Building Flutter web app..."
-flutter build web --release --web-renderer canvaskit
+flutter build web --release
 
 echo "✅ Flutter web build completed successfully!"
 echo "🎉 Ready for deployment!"
