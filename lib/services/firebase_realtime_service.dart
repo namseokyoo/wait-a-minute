@@ -79,6 +79,9 @@ class FirebaseRealtimeService extends ChangeNotifier {
         }
       }
       
+      // Test database connection by writing a test value
+      await _testDatabaseConnection();
+      
       _isInitialized = true;
 
       if (kDebugMode) {
@@ -98,6 +101,34 @@ class FirebaseRealtimeService extends ChangeNotifier {
         print('FirebaseRealtimeService: 초기화 실패 - $e');
       }
       return false;
+    }
+  }
+
+  /// Test database connection
+  Future<void> _testDatabaseConnection() async {
+    if (_database == null) return;
+    
+    try {
+      final testRef = _database!.child('_test');
+      await testRef.set({
+        'timestamp': ServerValue.timestamp,
+        'platform': kIsWeb ? 'web' : 'mobile',
+      });
+      
+      // Read it back to confirm it works
+      final snapshot = await testRef.get();
+      if (snapshot.exists) {
+        if (kDebugMode) {
+          print('FirebaseRealtimeService: 데이터베이스 읽기/쓰기 테스트 성공');
+        }
+        // Clean up test data
+        await testRef.remove();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('FirebaseRealtimeService: 데이터베이스 연결 테스트 실패 - $e');
+      }
+      // Don't throw - just log the error
     }
   }
 

@@ -89,13 +89,21 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
         print('모니터 기기 ID: $_monitorDeviceId');
       }
 
-      // Initialize Firebase service
-      final initialized = await _firebaseService.initialize();
+      // Initialize Firebase service with retry logic
+      bool initialized = await _firebaseService.initialize();
       if (!initialized) {
         if (kDebugMode) {
-          print('SimplifiedMonitorService: Firebase 초기화 실패 - 백그라운드 모니터링 불가');
+          print('SimplifiedMonitorService: Firebase 초기화 실패 - 재시도 중...');
         }
-        return;
+        // 재시도 로직
+        await Future.delayed(const Duration(seconds: 2));
+        initialized = await _firebaseService.initialize();
+        if (!initialized) {
+          if (kDebugMode) {
+            print('SimplifiedMonitorService: Firebase 초기화 재시도 실패 - 백그라운드 모니터링 불가');
+          }
+          return;
+        }
       }
 
       // Initialize notification service
