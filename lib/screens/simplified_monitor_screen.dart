@@ -101,7 +101,6 @@ class _SimplifiedMonitorScreenState extends State<SimplifiedMonitorScreen> {
                 ],
               ),
             ),
-
           ],
         ),
       ),
@@ -251,7 +250,6 @@ class _SimplifiedMonitorScreenState extends State<SimplifiedMonitorScreen> {
                   return _buildDeviceCard(device);
                 },
               ),
-
           ],
         ),
       ),
@@ -409,7 +407,9 @@ class _SimplifiedMonitorScreenState extends State<SimplifiedMonitorScreen> {
   }
 
   /// Build background monitoring panel
-  Widget _buildBackgroundMonitoringPanel(SimplifiedMonitorService monitorService) {
+  Widget _buildBackgroundMonitoringPanel(
+    SimplifiedMonitorService monitorService,
+  ) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -437,9 +437,10 @@ class _SimplifiedMonitorScreenState extends State<SimplifiedMonitorScreen> {
                       monitorService.backgroundMonitoringEnabled
                           ? Icons.notifications_active
                           : Icons.notifications_off,
-                      color: monitorService.backgroundMonitoringEnabled
-                          ? Colors.green
-                          : Colors.grey,
+                      color:
+                          monitorService.backgroundMonitoringEnabled
+                              ? Colors.green
+                              : Colors.grey,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -479,7 +480,11 @@ class _SimplifiedMonitorScreenState extends State<SimplifiedMonitorScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green[600], size: 16),
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green[600],
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

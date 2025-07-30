@@ -122,7 +122,7 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           Row(
             children: [
               Expanded(
@@ -140,17 +140,17 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       _currentSettings.description,
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[400], fontSize: 14),
                     ),
                   ],
                 ),
               ),
-              
+
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blue.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -185,7 +185,7 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         ..._buildPresetWidgets(),
       ],
     );
@@ -226,10 +226,10 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
             ),
           ],
         ),
-        
+
         if (_isCustomMode) ...[
           const SizedBox(height: 20),
-          
+
           // 감도 배율 슬라이더
           _buildSlider(
             title: '감도 배율',
@@ -246,9 +246,9 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
               });
             },
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // 임계값 슬라이더
           _buildSlider(
             title: '감지 임계값',
@@ -306,16 +306,16 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
                     ),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blue.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -331,9 +331,9 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               activeTrackColor: Colors.blue,
@@ -386,7 +386,7 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
             style: TextStyle(color: Colors.grey[400], fontSize: 14),
           ),
           const SizedBox(height: 16),
-          
+
           // 테스트 값들
           ..._buildTestCases(),
         ],
@@ -421,17 +421,13 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           const Text(
             '• 감도 배율: 카메라에서 감지된 파란불빛 강도에 곱해지는 값입니다.\n'
             '• 감지 임계값: 이 값 이상일 때 대기인원이 있다고 판단합니다.\n'
             '• 감도를 높이면 약한 파란불도 감지하지만 오탐지가 증가할 수 있습니다.\n'
             '• 환경에 맞게 설정을 조정하여 최적의 감지 성능을 얻으세요.',
-            style: TextStyle(
-              color: Colors.blue,
-              fontSize: 14,
-              height: 1.5,
-            ),
+            style: TextStyle(color: Colors.blue, fontSize: 14, height: 1.5),
           ),
         ],
       ),
@@ -441,9 +437,9 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
   /// Build preset widgets
   List<Widget> _buildPresetWidgets() {
     return SensitivitySettings.presets.map((preset) {
-      final isSelected = !_isCustomMode && 
-          _currentSettings.levelName == preset.levelName;
-      
+      final isSelected =
+          !_isCustomMode && _currentSettings.levelName == preset.levelName;
+
       return Container(
         margin: const EdgeInsets.only(bottom: 12),
         child: InkWell(
@@ -452,14 +448,13 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isSelected 
-                  ? Colors.blue.withValues(alpha: 0.2)
-                  : Colors.grey[800],
+              color:
+                  isSelected
+                      ? Colors.blue.withValues(alpha: 0.2)
+                      : Colors.grey[800],
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected 
-                    ? Colors.blue 
-                    : Colors.grey[700]!,
+                color: isSelected ? Colors.blue : Colors.grey[700]!,
                 width: isSelected ? 2 : 1,
               ),
             ),
@@ -477,13 +472,18 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
                       width: 2,
                     ),
                   ),
-                  child: isSelected 
-                      ? const Icon(Icons.check, color: Colors.white, size: 12)
-                      : null,
+                  child:
+                      isSelected
+                          ? const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 12,
+                          )
+                          : null,
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // 설정 정보
                 Expanded(
                   child: Column(
@@ -502,12 +502,13 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8, 
+                              horizontal: 8,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: _getMultiplierColor(preset.multiplier)
-                                  .withValues(alpha: 0.2),
+                              color: _getMultiplierColor(
+                                preset.multiplier,
+                              ).withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -524,10 +525,7 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
                       const SizedBox(height: 4),
                       Text(
                         preset.description,
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
                       ),
                     ],
                   ),
@@ -578,9 +576,9 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
                 border: Border.all(color: color, width: 2),
               ),
             ),
-            
+
             const SizedBox(width: 12),
-            
+
             // 라벨
             Expanded(
               child: Column(
@@ -596,22 +594,20 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
                   ),
                   Text(
                     '원본: ${(rawIntensity * 100).toInt()}% → 증폭: ${(amplifiedIntensity * 100).toInt()}%',
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
                   ),
                 ],
               ),
             ),
-            
+
             // 감지 결과
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: isDetected 
-                    ? Colors.green.withValues(alpha: 0.2)
-                    : Colors.grey.withValues(alpha: 0.2),
+                color:
+                    isDetected
+                        ? Colors.green.withValues(alpha: 0.2)
+                        : Colors.grey.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -651,7 +647,7 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
   void _saveSettings() {
     final cameraService = context.read<CameraService>();
     cameraService.updateSensitivitySettings(_currentSettings);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('감도 설정이 저장되었습니다: ${_currentSettings.levelName}'),
@@ -659,7 +655,7 @@ class _CCTVSettingsScreenState extends State<CCTVSettingsScreen> {
         duration: const Duration(seconds: 2),
       ),
     );
-    
+
     Navigator.of(context).pop();
   }
 

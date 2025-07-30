@@ -11,7 +11,7 @@ class SmartUpdateManager {
   DateTime? _lastCriticalUpdate;
   bool _isAppInBackground = false;
   bool _isWaitingState = false;
-  
+
   // Performance metrics
   int _updateCount = 0;
   DateTime _sessionStart = DateTime.now();
@@ -39,7 +39,7 @@ class SmartUpdateManager {
 
     // Apply adaptive throttling based on update frequency
     interval = _applyAdaptiveThrottling(interval);
-    
+
     _updateInterval = interval;
     return interval;
   }
@@ -48,15 +48,17 @@ class SmartUpdateManager {
   Duration _applyAdaptiveThrottling(Duration baseInterval) {
     final now = DateTime.now();
     final sessionDuration = now.difference(_sessionStart);
-    
+
     // If we've been updating very frequently for a long time, slow down slightly
     if (sessionDuration.inMinutes > 30 && _updateCount > 1000) {
       if (kDebugMode) {
         print('SmartUpdateManager: Applying adaptive throttling');
       }
-      return Duration(milliseconds: (baseInterval.inMilliseconds * 1.2).round());
+      return Duration(
+        milliseconds: (baseInterval.inMilliseconds * 1.2).round(),
+      );
     }
-    
+
     return baseInterval;
   }
 
@@ -68,54 +70,59 @@ class SmartUpdateManager {
     required double previousBlueIntensity,
   }) {
     final now = DateTime.now();
-    
+
     // Always update if waiting state changed
     if (isWaitingState != _isWaitingState) {
       _lastCriticalUpdate = now;
       _recordUpdate(critical: true);
       return true;
     }
-    
+
     // Always update if blue intensity changed significantly
     final intensityDelta = (blueIntensity - previousBlueIntensity).abs();
-    if (intensityDelta > 0.05) { // 5% change threshold
+    if (intensityDelta > 0.05) {
+      // 5% change threshold
       _recordUpdate();
       return true;
     }
-    
+
     // Skip updates if app is in background and no critical changes
     if (isAppInBackground && !isWaitingState && intensityDelta < 0.01) {
       return false;
     }
-    
+
     // Regular interval-based updates
-    final timeSinceLastCritical = _lastCriticalUpdate != null 
-        ? now.difference(_lastCriticalUpdate!)
-        : Duration.zero;
-        
-    if (timeSinceLastCritical >= getOptimalUpdateInterval(
-      isWaitingState: isWaitingState,
-      isAppInBackground: isAppInBackground,
-    )) {
+    final timeSinceLastCritical =
+        _lastCriticalUpdate != null
+            ? now.difference(_lastCriticalUpdate!)
+            : Duration.zero;
+
+    if (timeSinceLastCritical >=
+        getOptimalUpdateInterval(
+          isWaitingState: isWaitingState,
+          isAppInBackground: isAppInBackground,
+        )) {
       _recordUpdate();
       return true;
     }
-    
+
     return false;
   }
 
   /// Record update for metrics
   void _recordUpdate({bool critical = false}) {
     _updateCount++;
-    
+
     if (critical) {
       _lastCriticalUpdate = DateTime.now();
     }
-    
+
     if (kDebugMode && _updateCount % 100 == 0) {
       final sessionDuration = DateTime.now().difference(_sessionStart);
       final updatesPerMinute = _updateCount / sessionDuration.inMinutes;
-      print('SmartUpdateManager: $updatesPerMinute updates/min (total: $_updateCount)');
+      print(
+        'SmartUpdateManager: $updatesPerMinute updates/min (total: $_updateCount)',
+      );
     }
   }
 
@@ -125,9 +132,10 @@ class SmartUpdateManager {
     return {
       'totalUpdates': _updateCount,
       'sessionDurationMinutes': sessionDuration.inMinutes,
-      'averageUpdatesPerMinute': sessionDuration.inMinutes > 0 
-          ? _updateCount / sessionDuration.inMinutes 
-          : 0,
+      'averageUpdatesPerMinute':
+          sessionDuration.inMinutes > 0
+              ? _updateCount / sessionDuration.inMinutes
+              : 0,
       'currentInterval': _updateInterval.inMilliseconds,
       'isWaitingState': _isWaitingState,
       'isAppInBackground': _isAppInBackground,
@@ -139,7 +147,7 @@ class SmartUpdateManager {
     _updateCount = 0;
     _sessionStart = DateTime.now();
     _lastCriticalUpdate = null;
-    
+
     if (kDebugMode) {
       print('SmartUpdateManager: Statistics reset');
     }
@@ -164,12 +172,18 @@ class SmartUpdateManager {
     required Duration baseInterval,
     required double batteryLevel,
   }) {
-    if (batteryLevel < 0.2) { // Below 20% battery
-      return Duration(milliseconds: (baseInterval.inMilliseconds * 1.5).round());
-    } else if (batteryLevel < 0.1) { // Below 10% battery
-      return Duration(milliseconds: (baseInterval.inMilliseconds * 2.0).round());
+    if (batteryLevel < 0.2) {
+      // Below 20% battery
+      return Duration(
+        milliseconds: (baseInterval.inMilliseconds * 1.5).round(),
+      );
+    } else if (batteryLevel < 0.1) {
+      // Below 10% battery
+      return Duration(
+        milliseconds: (baseInterval.inMilliseconds * 2.0).round(),
+      );
     }
-    
+
     return baseInterval;
   }
 }

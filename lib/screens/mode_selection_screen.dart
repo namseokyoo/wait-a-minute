@@ -57,17 +57,22 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                           ModeCard(
                             mode: AppMode.cctv,
                             title: 'CCTV 모드',
-                            subtitle: permissionService.cameraPermissionGranted
-                                ? '파란불빛 감지 및 상태 전송'
-                                : '카메라 권한이 필요합니다',
+                            subtitle:
+                                permissionService.cameraPermissionGranted
+                                    ? '파란불빛 감지 및 상태 전송'
+                                    : '카메라 권한이 필요합니다',
                             icon: Icons.videocam,
-                            color: permissionService.cameraPermissionGranted 
-                                ? Colors.blue 
-                                : Colors.grey,
-                            onTap: permissionService.cameraPermissionGranted
-                                ? () => _selectMode(AppMode.cctv)
-                                : () => _showCameraPermissionRequiredDialog(),
-                            isEnabled: permissionService.cameraPermissionGranted,
+                            color:
+                                permissionService.cameraPermissionGranted
+                                    ? Colors.blue
+                                    : Colors.grey,
+                            onTap:
+                                permissionService.cameraPermissionGranted
+                                    ? () => _selectMode(AppMode.cctv)
+                                    : () =>
+                                        _showCameraPermissionRequiredDialog(),
+                            isEnabled:
+                                permissionService.cameraPermissionGranted,
                           ),
 
                           const SizedBox(height: 20),
@@ -191,10 +196,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                '확인',
-                style: TextStyle(color: Colors.grey[400]),
-              ),
+              child: Text('확인', style: TextStyle(color: Colors.grey[400])),
             ),
             ElevatedButton(
               onPressed: () {

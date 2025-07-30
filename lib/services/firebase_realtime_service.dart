@@ -37,7 +37,7 @@ class FirebaseRealtimeService extends ChangeNotifier {
           return false;
         },
       );
-      
+
       if (!isReady) {
         if (kDebugMode) {
           print('FirebaseRealtimeService: Firebase 초기화가 완료되지 않음');
@@ -78,10 +78,10 @@ class FirebaseRealtimeService extends ChangeNotifier {
           print('FirebaseRealtimeService: 모바일 데이터베이스 연결 설정');
         }
       }
-      
+
       // Test database connection by writing a test value
       await _testDatabaseConnection();
-      
+
       _isInitialized = true;
 
       if (kDebugMode) {
@@ -90,7 +90,7 @@ class FirebaseRealtimeService extends ChangeNotifier {
 
       // Start batch cleanup system after successful initialization
       _batchCleanupManager.startBatchCleanup(database: _database);
-      
+
       if (kDebugMode) {
         print('FirebaseRealtimeService: 배치 정리 시스템 시작됨');
       }
@@ -107,14 +107,14 @@ class FirebaseRealtimeService extends ChangeNotifier {
   /// Test database connection
   Future<void> _testDatabaseConnection() async {
     if (_database == null) return;
-    
+
     try {
       final testRef = _database!.child('_test');
       await testRef.set({
         'timestamp': ServerValue.timestamp,
         'platform': kIsWeb ? 'web' : 'mobile',
       });
-      
+
       // Read it back to confirm it works
       final snapshot = await testRef.get();
       if (snapshot.exists) {
@@ -179,20 +179,21 @@ class FirebaseRealtimeService extends ChangeNotifier {
             'lastSeen': ServerValue.timestamp,
             'connectionRestored': ServerValue.timestamp,
           });
-          
+
           // Set up disconnect handler for monitors (mark as offline but don't remove)
           monitorRef.onDisconnect().update({
             'isOnline': false,
             'disconnectedAt': ServerValue.timestamp,
             'lastSeen': ServerValue.timestamp,
           });
-          
+
           if (kDebugMode) {
-            print('Monitor presence tracking setup for $deviceId with disconnect handler');
+            print(
+              'Monitor presence tracking setup for $deviceId with disconnect handler',
+            );
           }
         }
       });
-      
     } catch (e) {
       if (kDebugMode) {
         print('Failed to setup monitor presence: $e');
@@ -206,7 +207,7 @@ class FirebaseRealtimeService extends ChangeNotifier {
 
     try {
       final monitorRef = _database!.child('monitors').child(deviceId);
-      
+
       await monitorRef.update({
         'isOnline': true,
         'lastSeen': ServerValue.timestamp,
@@ -274,20 +275,21 @@ class FirebaseRealtimeService extends ChangeNotifier {
             'lastUpdate': ServerValue.timestamp,
             'connectionRestored': ServerValue.timestamp,
           });
-          
+
           // Setup disconnect handler with graceful offline marking
           deviceRef.child('status').onDisconnect().update({
             'isOnline': false,
             'disconnectedAt': ServerValue.timestamp,
             'lastSeen': ServerValue.timestamp,
           });
-          
+
           if (kDebugMode) {
-            print('Device presence tracking setup for $deviceId with disconnect handler');
+            print(
+              'Device presence tracking setup for $deviceId with disconnect handler',
+            );
           }
         }
       });
-      
     } catch (e) {
       if (kDebugMode) {
         print('Failed to setup device presence: $e');
@@ -361,7 +363,6 @@ class FirebaseRealtimeService extends ChangeNotifier {
     }
   }
 
-
   /// Clean up offline devices periodically
   Future<void> cleanupOfflineDevices() async {
     if (!_isInitialized || _database == null) return;
@@ -422,7 +423,7 @@ class FirebaseRealtimeService extends ChangeNotifier {
             print('스냅샷 존재: ${event.snapshot.exists}');
             print('스냅샷 값: ${event.snapshot.value}');
           }
-          
+
           final data = event.snapshot.value;
           if (data != null && data is Map) {
             final devices = Map<String, dynamic>.from(data);
@@ -605,7 +606,7 @@ class FirebaseRealtimeService extends ChangeNotifier {
   void dispose() {
     // Stop batch cleanup
     _batchCleanupManager.dispose();
-    
+
     // Cancel all subscriptions
     for (final subscription in _listeners.values) {
       subscription.cancel();

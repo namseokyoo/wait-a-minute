@@ -19,7 +19,7 @@ void main() async {
   // Initialize Firebase with better error handling for web
   final firebaseInitService = FirebaseInitializationService();
   bool firebaseReady = false;
-  
+
   try {
     firebaseReady = await firebaseInitService.initializeFully();
     if (kDebugMode) {
@@ -36,7 +36,8 @@ void main() async {
   // Initialize unified notification service (Firebase가 실패해도 실행)
   globalLocalNotificationService = LocalNotificationService();
   try {
-    final notificationInitialized = await globalLocalNotificationService.initialize();
+    final notificationInitialized =
+        await globalLocalNotificationService.initialize();
     if (kDebugMode) {
       print('Unified Notifications: ${notificationInitialized ? "성공" : "실패"}');
     }
@@ -51,7 +52,7 @@ void main() async {
 
 class WaitAMinuteApp extends StatelessWidget {
   final bool firebaseReady;
-  
+
   const WaitAMinuteApp({super.key, required this.firebaseReady});
 
   @override

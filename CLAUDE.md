@@ -153,3 +153,91 @@ lib/
 - **Permission Flow**: Camera and notification permissions required before mode selection
 - **State Management**: Centralized waiting state with change notifications
 - **Device Identification**: UUID-based device tracking for CCTV/Monitor coordination
+
+## Git Workflow & Branch Strategy
+
+### Branch Structure
+```
+main         # Production-ready code (stable releases)
+├── dev      # Development branch (feature integration)
+    ├── feature/camera-improvements
+    ├── feature/web-compatibility  
+    └── hotfix/critical-bug-fix
+```
+
+### Development Workflow
+
+#### 1. Feature Development
+```bash
+# Create and switch to dev branch from main
+git checkout main
+git pull origin main
+git checkout -b dev
+
+# For new features, create feature branch from dev
+git checkout dev
+git checkout -b feature/feature-name
+
+# Work on feature, commit changes
+git add .
+git commit -m "feat: implement new feature
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# Push feature branch
+git push origin feature/feature-name
+```
+
+#### 2. Integration & Testing
+```bash
+# Merge feature into dev for integration testing
+git checkout dev
+git merge feature/feature-name
+
+# Test thoroughly on dev branch
+flutter test
+flutter build web --release
+flutter build apk --release
+
+# Push tested dev branch
+git push origin dev
+```
+
+#### 3. Production Deployment
+```bash
+# When dev is stable, merge to main
+git checkout main
+git merge dev
+
+# Tag release
+git tag -a v1.0.1 -m "Release v1.0.1: Web compatibility improvements"
+
+# Push to production
+git push origin main
+git push origin --tags
+```
+
+### Commit Message Guidelines
+```bash
+# Format: type: description
+# Types: feat, fix, docs, style, refactor, test, chore
+
+git commit -m "feat: add web-compatible blue light detection
+
+- Implement WebBlueLightDetector for web platform
+- Add platform-specific camera handling
+- Fix Firebase authentication for web
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+### Claude Code Instructions
+- **Always work on dev branch** for new features and modifications
+- **Test thoroughly** before merging to main
+- **Use feature branches** for complex changes
+- **Merge to main** only for production-ready code
+- **Create releases** with proper versioning and changelog

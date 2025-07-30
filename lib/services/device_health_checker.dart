@@ -42,7 +42,9 @@ class DeviceHealthChecker {
     _isHealthCheckActive = true;
 
     if (kDebugMode) {
-      print('DeviceHealthChecker: Health check started with ${interval.inMinutes}분 간격');
+      print(
+        'DeviceHealthChecker: Health check started with ${interval.inMinutes}분 간격',
+      );
     }
   }
 
@@ -66,12 +68,14 @@ class DeviceHealthChecker {
 
       // 1. Check Firebase connection
       final isConnected = await _checkFirebaseConnection();
-      
+
       // 2. Check device registration status
       // (This would be called with specific device IDs from the services)
-      
+
       if (kDebugMode) {
-        print('DeviceHealthChecker: Health check completed - Connected: $isConnected');
+        print(
+          'DeviceHealthChecker: Health check completed - Connected: $isConnected',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
@@ -98,9 +102,11 @@ class DeviceHealthChecker {
       // Check if device exists in Firebase
       final deviceStatus = await _firebaseService.getDeviceStatus(deviceId);
       final isRegistered = deviceStatus != null;
-      
+
       if (kDebugMode) {
-        print('DeviceHealthChecker: Device $deviceId registration check - $isRegistered');
+        print(
+          'DeviceHealthChecker: Device $deviceId registration check - $isRegistered',
+        );
       }
 
       // Collect health metrics
@@ -111,13 +117,15 @@ class DeviceHealthChecker {
       };
 
       onHealthMetrics?.call(deviceId, metrics);
-      
+
       return isRegistered;
     } catch (e) {
       if (kDebugMode) {
-        print('DeviceHealthChecker: Device registration check failed for $deviceId - $e');
+        print(
+          'DeviceHealthChecker: Device registration check failed for $deviceId - $e',
+        );
       }
-      
+
       onRegistrationFailure?.call(deviceId, e.toString());
       return false;
     }
@@ -125,8 +133,8 @@ class DeviceHealthChecker {
 
   /// Recover device registration
   Future<bool> recoverDevice(
-    String deviceId, 
-    Future<void> Function() reregistrationCallback
+    String deviceId,
+    Future<void> Function() reregistrationCallback,
   ) async {
     try {
       if (kDebugMode) {
@@ -143,13 +151,17 @@ class DeviceHealthChecker {
       await reregistrationCallback();
 
       // 3. Verify recovery
-      await Future.delayed(Duration(seconds: 2)); // Wait for registration to complete
+      await Future.delayed(
+        Duration(seconds: 2),
+      ); // Wait for registration to complete
       final isRecovered = await checkDeviceRegistration(deviceId);
 
       if (isRecovered) {
         onConnectionRestored?.call(deviceId);
         if (kDebugMode) {
-          print('DeviceHealthChecker: Device recovery successful for $deviceId');
+          print(
+            'DeviceHealthChecker: Device recovery successful for $deviceId',
+          );
         }
       } else {
         if (kDebugMode) {

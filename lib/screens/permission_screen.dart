@@ -504,10 +504,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                '취소',
-                style: TextStyle(color: Colors.grey[400]),
-              ),
+              child: Text('취소', style: TextStyle(color: Colors.grey[400])),
             ),
             ElevatedButton(
               onPressed: () {

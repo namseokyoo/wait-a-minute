@@ -2,13 +2,13 @@
 class SensitivitySettings {
   /// 감도 배율 (0.1 ~ 3.0)
   final double multiplier;
-  
+
   /// 감도 레벨 이름
   final String levelName;
-  
+
   /// 임계값 (대기 감지를 위한 최소값)
   final double threshold;
-  
+
   /// 설정 생성 시간
   final DateTime createdAt;
 
@@ -126,7 +126,7 @@ class SensitivitySettings {
   Map<String, dynamic> toJson() => toMap();
 
   /// JSON 역직렬화
-  factory SensitivitySettings.fromJson(Map<String, dynamic> json) => 
+  factory SensitivitySettings.fromJson(Map<String, dynamic> json) =>
       SensitivitySettings.fromMap(json);
 
   /// 복사본 생성
@@ -163,9 +163,7 @@ class SensitivitySettings {
 
   @override
   int get hashCode {
-    return multiplier.hashCode ^
-        levelName.hashCode ^
-        threshold.hashCode;
+    return multiplier.hashCode ^ levelName.hashCode ^ threshold.hashCode;
   }
 
   @override

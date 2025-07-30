@@ -2,13 +2,17 @@
   "rules": {
     ".read": false,
     ".write": false,
+    "_test": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "devices": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": false,
       "$deviceId": {
         ".write": "auth != null",
         "deviceInfo": {
-          ".validate": "newData.hasChildren(['name', 'location', 'mode'])"
+          ".validate": "newData.hasChildren(['name', 'location'])"
         },
         "status": {
           ".validate": "newData.hasChildren(['isOnline', 'lastUpdate'])"
@@ -16,7 +20,7 @@
       }
     },
     "monitors": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": false,
       "$monitorId": {
         ".write": "auth != null",
@@ -24,7 +28,7 @@
       }
     },
     "alerts": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": false,
       "$alertId": {
         ".write": "auth != null",

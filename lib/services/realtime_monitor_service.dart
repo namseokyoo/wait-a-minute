@@ -39,7 +39,8 @@ class RealtimeMonitorService extends ChangeNotifier {
 
       // Firebase가 이미 초기화되었는지 확인
       if (Firebase.apps.isEmpty) {
-        _errorMessage = 'Firebase가 초기화되지 않았습니다. main.dart에서 Firebase.initializeApp()을 먼저 실행해주세요.';
+        _errorMessage =
+            'Firebase가 초기화되지 않았습니다. main.dart에서 Firebase.initializeApp()을 먼저 실행해주세요.';
         if (kDebugMode) {
           print('RealtimeMonitorService: Firebase 초기화되지 않음');
         }
@@ -91,27 +92,29 @@ class RealtimeMonitorService extends ChangeNotifier {
     }
   }
 
-
-
   /// 모니터 디바이스로 등록 (FCM 알림 수신을 위해) - 안전한 방식
   Future<void> _registerAsMonitorDevice() async {
     try {
       // Firebase 보안 규칙이 허용하는 경우에만 등록
       _monitorId = 'monitor_${DateTime.now().millisecondsSinceEpoch}';
-      
+
       if (kDebugMode) {
         print('RealtimeMonitorService: 모니터 디바이스 등록 시도 ($_monitorId)');
         print('Firebase 보안 규칙에 따라 등록이 실패할 수 있습니다 (정상)');
       }
 
       // 타임아웃을 설정하여 무한 대기 방지
-      await _database.ref('/monitors').child(_monitorId!).set({
-        'deviceName': '모니터링 앱',
-        'deviceType': 'monitor',
-        'isOnline': true,
-        'registeredAt': DateTime.now().millisecondsSinceEpoch,
-        'lastSeen': DateTime.now().millisecondsSinceEpoch,
-      }).timeout(const Duration(seconds: 5));
+      await _database
+          .ref('/monitors')
+          .child(_monitorId!)
+          .set({
+            'deviceName': '모니터링 앱',
+            'deviceType': 'monitor',
+            'isOnline': true,
+            'registeredAt': DateTime.now().millisecondsSinceEpoch,
+            'lastSeen': DateTime.now().millisecondsSinceEpoch,
+          })
+          .timeout(const Duration(seconds: 5));
 
       if (kDebugMode) {
         print('RealtimeMonitorService: 모니터 디바이스 등록 성공 ($_monitorId)');
@@ -135,9 +138,11 @@ class RealtimeMonitorService extends ChangeNotifier {
         print('RealtimeMonitorService: 모니터 디바이스 제거 중 ($_monitorId)');
       }
 
-      await _database.ref('/monitors').child(_monitorId!).remove().timeout(
-        const Duration(seconds: 3),
-      );
+      await _database
+          .ref('/monitors')
+          .child(_monitorId!)
+          .remove()
+          .timeout(const Duration(seconds: 3));
 
       if (kDebugMode) {
         print('RealtimeMonitorService: 모니터 디바이스 제거 완료');
@@ -207,29 +212,36 @@ class RealtimeMonitorService extends ChangeNotifier {
         try {
           final deviceId = key.toString();
           final deviceData = Map<String, dynamic>.from(value);
-          
+
           // Firebase 구조: /devices/{deviceId}/deviceInfo와 /devices/{deviceId}/status
           // 안전한 타입 변환
           final deviceInfo = _safeMapCast(deviceData['deviceInfo']);
           final status = _safeMapCast(deviceData['status']);
-          
+
           if (deviceInfo != null && status != null) {
             // 디바이스 정보와 상태를 결합하여 CCTVDeviceStatus 생성
             final combinedData = <String, dynamic>{
-              'deviceName': deviceInfo['name'] ?? deviceInfo['deviceName'] ?? 'Unknown Device',
+              'deviceName':
+                  deviceInfo['name'] ??
+                  deviceInfo['deviceName'] ??
+                  'Unknown Device',
               'location': deviceInfo['location'] ?? 'Unknown Location',
               'isOnline': status['isOnline'] ?? false,
               'isMonitoring': status['isMonitoring'] ?? false,
               'blueIntensity': (status['blueIntensity'] ?? 0.0).toDouble(),
-              'isWaitingDetected': status['isWaiting'] ?? status['isWaitingDetected'] ?? false,
+              'isWaitingDetected':
+                  status['isWaiting'] ?? status['isWaitingDetected'] ?? false,
               'batteryLevel': (status['batteryLevel'] ?? 0.0).toDouble(),
               'lastUpdate': status['lastUpdate'],
               'connectionQuality': status['connectionQuality'] ?? 100,
             };
-            
-            final deviceStatus = CCTVDeviceStatus.fromFirebase(deviceId, combinedData);
+
+            final deviceStatus = CCTVDeviceStatus.fromFirebase(
+              deviceId,
+              combinedData,
+            );
             newDevices[deviceId] = deviceStatus;
-            
+
             if (kDebugMode) {
               print('디바이스 파싱 성공 ($deviceId): ${deviceStatus.deviceName}');
             }
@@ -239,23 +251,38 @@ class RealtimeMonitorService extends ChangeNotifier {
               print('  - deviceInfo 존재: ${deviceInfo != null}');
               print('  - status 존재: ${status != null}');
               print('  - 원본 데이터: $deviceData');
-              
+
               // 데이터가 부분적으로만 있는 경우 처리
               if (deviceInfo != null || status != null) {
                 print('  - 부분 데이터로 디바이스 생성 시도');
                 final combinedData = <String, dynamic>{
-                  'deviceName': (deviceInfo?['name'] ?? deviceInfo?['deviceName'] ?? status?['deviceName'] ?? 'Unknown Device'),
-                  'location': (deviceInfo?['location'] ?? status?['location'] ?? 'Unknown Location'),
+                  'deviceName':
+                      (deviceInfo?['name'] ??
+                          deviceInfo?['deviceName'] ??
+                          status?['deviceName'] ??
+                          'Unknown Device'),
+                  'location':
+                      (deviceInfo?['location'] ??
+                          status?['location'] ??
+                          'Unknown Location'),
                   'isOnline': (status?['isOnline'] ?? false),
                   'isMonitoring': (status?['isMonitoring'] ?? false),
-                  'blueIntensity': ((status?['blueIntensity'] ?? 0.0) as num).toDouble(),
-                  'isWaitingDetected': (status?['isWaiting'] ?? status?['isWaitingDetected'] ?? false),
-                  'batteryLevel': ((status?['batteryLevel'] ?? 0.0) as num).toDouble(),
+                  'blueIntensity':
+                      ((status?['blueIntensity'] ?? 0.0) as num).toDouble(),
+                  'isWaitingDetected':
+                      (status?['isWaiting'] ??
+                          status?['isWaitingDetected'] ??
+                          false),
+                  'batteryLevel':
+                      ((status?['batteryLevel'] ?? 0.0) as num).toDouble(),
                   'lastUpdate': status?['lastUpdate'],
                   'connectionQuality': (status?['connectionQuality'] ?? 50),
                 };
-                
-                final deviceStatus = CCTVDeviceStatus.fromFirebase(deviceId, combinedData);
+
+                final deviceStatus = CCTVDeviceStatus.fromFirebase(
+                  deviceId,
+                  combinedData,
+                );
                 newDevices[deviceId] = deviceStatus;
                 print('  - 부분 데이터로 디바이스 생성 성공: ${deviceStatus.deviceName}');
               }
@@ -279,7 +306,9 @@ class RealtimeMonitorService extends ChangeNotifier {
     if (kDebugMode) {
       print('RealtimeMonitorService: ${_devices.length}개 디바이스 업데이트됨');
       for (final device in _devices.values) {
-        print('  - ${device.deviceName} (${device.location}): ${device.isOnline ? "온라인" : "오프라인"}, ${device.isMonitoring ? "모니터링중" : "대기중"}');
+        print(
+          '  - ${device.deviceName} (${device.location}): ${device.isOnline ? "온라인" : "오프라인"}, ${device.isMonitoring ? "모니터링중" : "대기중"}',
+        );
       }
     }
   }
@@ -294,7 +323,7 @@ class RealtimeMonitorService extends ChangeNotifier {
       // 대기 상태가 false에서 true로 변경된 경우 (새로운 대기 발생)
       if (!previousWaitingState && currentWaitingState && device.isOnline) {
         _sendWaitingNotification(device);
-        
+
         if (kDebugMode) {
           print('대기 상태 변화 감지: ${device.deviceName} - 대기 발생!');
         }
@@ -308,23 +337,27 @@ class RealtimeMonitorService extends ChangeNotifier {
   /// 대기 발생 시 로컬 푸시 알림 전송
   void _sendWaitingNotification(CCTVDeviceStatus device) {
     final now = DateTime.now();
-    final timeString = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    
+    final timeString =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
     final title = '🚨 고객 대기 발생!';
-    final body = '${device.location}에서 고객이 대기 중입니다. ($timeString)\n'
-                '기기: ${device.deviceName}\n'
-                '파란불 세기: ${(device.blueIntensity * 100).toInt()}%';
+    final body =
+        '${device.location}에서 고객이 대기 중입니다. ($timeString)\n'
+        '기기: ${device.deviceName}\n'
+        '파란불 세기: ${(device.blueIntensity * 100).toInt()}%';
 
     // 로컬 알림 전송
-    LocalNotificationService().showNotification(
-      title: title,
-      body: body,
-      payload: 'waiting_alert_${device.deviceId}',
-    ).catchError((e) {
-      if (kDebugMode) {
-        print('알림 전송 실패: $e');
-      }
-    });
+    LocalNotificationService()
+        .showNotification(
+          title: title,
+          body: body,
+          payload: 'waiting_alert_${device.deviceId}',
+        )
+        .catchError((e) {
+          if (kDebugMode) {
+            print('알림 전송 실패: $e');
+          }
+        });
 
     if (kDebugMode) {
       print('로컬 푸시 알림 전송: ${device.deviceName} (${device.location})');
@@ -432,7 +465,9 @@ class RealtimeMonitorService extends ChangeNotifier {
       } else {
         _devices.clear();
         if (kDebugMode) {
-          print('RealtimeMonitorService: 디바이스 데이터가 없습니다. CCTV 앱이 실행되어 있는지 확인하세요.');
+          print(
+            'RealtimeMonitorService: 디바이스 데이터가 없습니다. CCTV 앱이 실행되어 있는지 확인하세요.',
+          );
         }
       }
 
@@ -456,7 +491,8 @@ class RealtimeMonitorService extends ChangeNotifier {
     if (!kDebugMode || !_isInitialized) return;
 
     try {
-      final testDeviceId = 'test_device_${DateTime.now().millisecondsSinceEpoch}';
+      final testDeviceId =
+          'test_device_${DateTime.now().millisecondsSinceEpoch}';
       final deviceRef = _database.ref('$_devicesPath/$testDeviceId');
 
       await deviceRef.set({
@@ -495,10 +531,10 @@ class RealtimeMonitorService extends ChangeNotifier {
   void dispose() {
     // Firebase에서 모니터 디바이스 제거
     _unregisterMonitorDevice();
-    
+
     // 리스너 정리
     _devicesSubscription?.cancel();
-    
+
     super.dispose();
 
     if (kDebugMode) {

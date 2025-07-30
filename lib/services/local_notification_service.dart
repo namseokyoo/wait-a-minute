@@ -32,7 +32,9 @@ class LocalNotificationService {
       }
 
       // Initialize local notifications
-      const initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const initializationSettingsAndroid = AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+      );
       const initializationSettingsIOS = DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
@@ -84,9 +86,10 @@ class LocalNotificationService {
 
     try {
       final title = '대기인원 알림';
-      final body = location.isNotEmpty
-          ? '$location에서 대기인원이 감지되었습니다'
-          : '$deviceName에서 대기인원이 감지되었습니다';
+      final body =
+          location.isNotEmpty
+              ? '$location에서 대기인원이 감지되었습니다'
+              : '$deviceName에서 대기인원이 감지되었습니다';
 
       const androidDetails = AndroidNotificationDetails(
         'waiting_alerts',
@@ -133,7 +136,9 @@ class LocalNotificationService {
   }
 
   /// Start listening to waiting state changes
-  void startListeningToWaitingStateChanges(WaitingStateService waitingStateService) {
+  void startListeningToWaitingStateChanges(
+    WaitingStateService waitingStateService,
+  ) {
     if (_isListeningToStateChanges) return;
 
     _waitingStateService = waitingStateService;
@@ -142,17 +147,16 @@ class LocalNotificationService {
     // Create and store the listener function
     _waitingStateListener = () {
       if (_waitingStateService!.isWaitingState) {
-        showWaitingNotification(
-          deviceName: '감지 기기',
-          location: '',
-        );
+        showWaitingNotification(deviceName: '감지 기기', location: '');
       }
     };
 
     _waitingStateService!.addListener(_waitingStateListener!);
 
     if (kDebugMode) {
-      print('Started listening to waiting state changes for local notifications');
+      print(
+        'Started listening to waiting state changes for local notifications',
+      );
     }
   }
 
@@ -161,7 +165,10 @@ class LocalNotificationService {
 
   /// Stop listening to waiting state changes
   void stopListeningToWaitingStateChanges() {
-    if (!_isListeningToStateChanges || _waitingStateService == null || _waitingStateListener == null) return;
+    if (!_isListeningToStateChanges ||
+        _waitingStateService == null ||
+        _waitingStateListener == null)
+      return;
 
     _waitingStateService!.removeListener(_waitingStateListener!);
     _waitingStateListener = null;
@@ -183,10 +190,7 @@ class LocalNotificationService {
 
   /// Test local notification
   Future<void> testNotification() async {
-    await showWaitingNotification(
-      deviceName: '테스트 기기',
-      location: '테스트 위치',
-    );
+    await showWaitingNotification(deviceName: '테스트 기기', location: '테스트 위치');
   }
 
   /// Setup waiting state listener (from original NotificationService functionality)

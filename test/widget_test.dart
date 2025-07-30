@@ -11,10 +11,12 @@ void main() {
     expect(find.text('고객 대기 감지 시스템'), findsOneWidget);
   });
 
-  testWidgets('Permission screen shows permission items', (WidgetTester tester) async {
+  testWidgets('Permission screen shows permission items', (
+    WidgetTester tester,
+  ) async {
     // Build our app
     await tester.pumpWidget(const WaitAMinuteApp(firebaseReady: false));
-    
+
     // Wait a bit for widgets to render
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));

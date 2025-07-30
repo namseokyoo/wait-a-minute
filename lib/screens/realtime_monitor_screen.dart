@@ -13,7 +13,8 @@ class RealtimeMonitorScreen extends StatefulWidget {
   State<RealtimeMonitorScreen> createState() => _RealtimeMonitorScreenState();
 }
 
-class _RealtimeMonitorScreenState extends State<RealtimeMonitorScreen> with WidgetsBindingObserver {
+class _RealtimeMonitorScreenState extends State<RealtimeMonitorScreen>
+    with WidgetsBindingObserver {
   late RealtimeMonitorService _monitorService;
   bool _isInitializing = true;
 
@@ -117,15 +118,15 @@ class _RealtimeMonitorScreenState extends State<RealtimeMonitorScreen> with Widg
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    
+
     // 앱이 종료되거나 백그라운드로 이동할 때 정리 작업 수행
-    if (state == AppLifecycleState.paused || 
+    if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached ||
         state == AppLifecycleState.inactive) {
       if (kDebugMode) {
         print('RealtimeMonitorScreen: 앱 라이프사이클 변화 감지 ($state) - 정리 작업 수행');
       }
-      
+
       // Firebase에서 모니터 디바이스 정리 (백그라운드에서 수행)
       _monitorService.dispose();
     }
@@ -135,7 +136,7 @@ class _RealtimeMonitorScreenState extends State<RealtimeMonitorScreen> with Widg
   void dispose() {
     // 앱 라이프사이클 관찰자 제거
     WidgetsBinding.instance.removeObserver(this);
-    
+
     // dispose에서는 추가 정리 작업 없이 기본 정리만 수행
     // 실제 Firebase 정리는 _cleanupAndExit에서 처리됨
     super.dispose();
@@ -260,12 +261,20 @@ class _RealtimeMonitorScreenState extends State<RealtimeMonitorScreen> with Widg
             if (kDebugMode) ...[
               IconButton(
                 onPressed: () => service.createTestData(),
-                icon: const Icon(Icons.add_circle, color: Colors.white70, size: 24),
+                icon: const Icon(
+                  Icons.add_circle,
+                  color: Colors.white70,
+                  size: 24,
+                ),
                 tooltip: '테스트 데이터 생성',
               ),
               IconButton(
                 onPressed: () => LocalNotificationService().testNotification(),
-                icon: const Icon(Icons.notifications, color: Colors.white70, size: 24),
+                icon: const Icon(
+                  Icons.notifications,
+                  color: Colors.white70,
+                  size: 24,
+                ),
                 tooltip: '테스트 알림',
               ),
             ],

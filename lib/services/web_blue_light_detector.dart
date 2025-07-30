@@ -1,24 +1,28 @@
-import 'package:camera/camera.dart';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/sensitivity_settings.dart';
 
-/// Blue light detection algorithm for analyzing camera frames
-class BlueLightDetector {
+/// Web-specific blue light detection using simulated signals
+/// Since web cannot access raw camera data, this provides a demo implementation
+class WebBlueLightDetector {
   // Detection parameters
-  static const int _minConsistentFrames = 3; // Frames needed for state change
-  static const int _frameHistorySize =
-      10; // Number of frames to keep for analysis
+  static const int _minConsistentFrames = 3;
+  static const int _frameHistorySize = 10;
 
   // State tracking
   final List<double> _frameHistory = [];
   int _consistentFrameCount = 0;
   bool _currentWaitingState = false;
-  double _baselineBlueLevel = 0.0;
+  double _baselineBlueLevel = 0.15; // Fixed baseline for web demo
   bool _baselineCalibrated = false;
   int _calibrationFrameCount = 0;
 
   // Sensitivity settings
   SensitivitySettings _sensitivitySettings = SensitivitySettings.standard();
+
+  // Demo simulation state
+  DateTime? _lastStateChange;
+  int _simulationCycle = 0;
 
   // Getters
   bool get isWaitingState => _currentWaitingState;
@@ -33,16 +37,16 @@ class BlueLightDetector {
     _sensitivitySettings = settings;
     if (kDebugMode) {
       print(
-        'BlueLightDetector: 감도 설정 업데이트 - ${settings.levelName} (×${settings.multiplier})',
+        'WebBlueLightDetector: 감도 설정 업데이트 - ${settings.levelName} (×${settings.multiplier})',
       );
     }
   }
 
-  /// Analyze camera frame and detect blue light intensity
-  Future<DetectionResult> analyzeFrame(CameraImage image) async {
+  /// Simulate blue light detection for web platform
+  Future<WebDetectionResult> simulateBlueLight() async {
     try {
-      // Convert camera image to analyzable format and calculate blue intensity
-      final blueIntensity = await _calculateBlueIntensity(image);
+      // Generate realistic blue light intensity simulation
+      final blueIntensity = _generateSimulatedIntensity();
 
       // Add to frame history
       _frameHistory.add(blueIntensity);
@@ -50,7 +54,7 @@ class BlueLightDetector {
         _frameHistory.removeAt(0);
       }
 
-      // Calibrate baseline if not done
+      // Auto-calibrate after a few frames
       if (!_baselineCalibrated) {
         _calibrateBaseline(blueIntensity);
       }
@@ -65,7 +69,13 @@ class BlueLightDetector {
       final newState = _determineWaitingState(amplifiedIntensity);
       final stateChanged = previousState != newState;
 
-      return DetectionResult(
+      // Track state changes for realistic timing
+      if (stateChanged) {
+        _lastStateChange = DateTime.now();
+        _simulationCycle = (_simulationCycle + 1) % 10;
+      }
+
+      return WebDetectionResult(
         blueIntensity: blueIntensity,
         amplifiedIntensity: amplifiedIntensity,
         normalizedIntensity: _normalizeIntensity(amplifiedIntensity),
@@ -75,103 +85,69 @@ class BlueLightDetector {
         baselineLevel: _baselineBlueLevel,
         sensitivityMultiplier: _sensitivitySettings.multiplier,
         timestamp: DateTime.now(),
+        isSimulated: true,
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Blue light detection error: $e');
+        print('Web blue light simulation error: $e');
       }
-      return DetectionResult.error(e.toString());
+      return WebDetectionResult.error(e.toString());
     }
   }
 
-  /// Calculate blue light intensity from camera image
-  Future<double> _calculateBlueIntensity(CameraImage image) async {
-    if (image.format.group != ImageFormatGroup.yuv420) {
-      throw Exception('Unsupported image format: ${image.format.group}');
+  /// Generate realistic blue light intensity simulation
+  double _generateSimulatedIntensity() {
+    final now = DateTime.now();
+    final secondsOfDay = now.hour * 3600 + now.minute * 60 + now.second;
+
+    // Create a semi-realistic pattern with some randomness
+    // Higher intensity during certain times (simulating customer activity)
+    double baseIntensity = 0.1;
+
+    // Add time-based variation (higher during business hours)
+    final hour = now.hour;
+    if (hour >= 9 && hour <= 18) {
+      baseIntensity += 0.05; // Slightly higher during business hours
     }
 
-    // Get Y, U, V planes from YUV420 format
-    final yPlane = image.planes[0];
-    final uPlane = image.planes[1];
-    final vPlane = image.planes[2];
+    // Add periodic variation (customers come in waves)
+    final periodicVariation = sin(secondsOfDay / 60) * 0.08;
 
-    final yBytes = yPlane.bytes;
-    final uBytes = uPlane.bytes;
-    final vBytes = vPlane.bytes;
+    // Add some controlled randomness
+    final randomComponent = (now.millisecond % 100) / 100.0 * 0.1;
 
-    final width = image.width;
-    final height = image.height;
-
-    // Sample pixels for analysis (use every 4th pixel for performance)
-    final sampleStep = 4;
-    double totalBlueIntensity = 0.0;
-    int sampleCount = 0;
-
-    for (int row = 0; row < height; row += sampleStep) {
-      for (int col = 0; col < width; col += sampleStep) {
-        final yIndex = row * yPlane.bytesPerRow + col;
-        final uvIndex = (row ~/ 2) * uPlane.bytesPerRow + (col ~/ 2);
-
-        if (yIndex < yBytes.length &&
-            uvIndex < uBytes.length &&
-            uvIndex < vBytes.length) {
-          // Get YUV values
-          final y = yBytes[yIndex];
-          final u = uBytes[uvIndex];
-          final v = vBytes[uvIndex];
-
-          // Convert YUV to RGB
-          final rgb = _yuvToRgb(y, u, v);
-
-          // Calculate blue intensity relative to other colors
-          final blueIntensity = _calculatePixelBlueIntensity(rgb);
-          totalBlueIntensity += blueIntensity;
-          sampleCount++;
-        }
-      }
+    // Simulation cycles to create realistic customer patterns
+    double cycleModifier = 0.0;
+    switch (_simulationCycle % 4) {
+      case 0: // No customer
+        cycleModifier = -0.05;
+        break;
+      case 1: // Customer approaching
+        cycleModifier = 0.1;
+        break;
+      case 2: // Customer waiting
+        cycleModifier = 0.15;
+        break;
+      case 3: // Customer leaving
+        cycleModifier = 0.05;
+        break;
     }
 
-    return sampleCount > 0 ? totalBlueIntensity / sampleCount : 0.0;
+    final result = (baseIntensity +
+            periodicVariation +
+            randomComponent +
+            cycleModifier)
+        .clamp(0.0, 0.4);
+
+    return result;
   }
 
-  /// Convert YUV pixel to RGB
-  List<int> _yuvToRgb(int y, int u, int v) {
-    // YUV to RGB conversion formulas
-    final yAdjusted = y - 16;
-    final uAdjusted = u - 128;
-    final vAdjusted = v - 128;
-
-    int r = ((298 * yAdjusted + 409 * vAdjusted + 128) >> 8).clamp(0, 255);
-    int g = ((298 * yAdjusted - 100 * uAdjusted - 208 * vAdjusted + 128) >> 8)
-        .clamp(0, 255);
-    int b = ((298 * yAdjusted + 516 * uAdjusted + 128) >> 8).clamp(0, 255);
-
-    return [r, g, b];
-  }
-
-  /// Calculate blue intensity for a single pixel
-  double _calculatePixelBlueIntensity(List<int> rgb) {
-    final r = rgb[0] / 255.0;
-    final g = rgb[1] / 255.0;
-    final b = rgb[2] / 255.0;
-
-    // Calculate blue dominance
-    // Blue intensity is high when blue channel is significantly higher than red and green
-    final blueDominance = b - ((r + g) / 2);
-
-    // Also consider overall brightness to avoid false positives in dark areas
-    final brightness = (r + g + b) / 3;
-    final brightnessWeight = brightness.clamp(0.3, 1.0);
-
-    return (blueDominance * brightnessWeight).clamp(0.0, 1.0);
-  }
-
-  /// Calibrate baseline blue level (first few frames)
+  /// Calibrate baseline blue level (for web, this is mostly for UI consistency)
   void _calibrateBaseline(double blueIntensity) {
     _calibrationFrameCount++;
 
-    if (_calibrationFrameCount <= 30) {
-      // Average first 30 frames for baseline
+    if (_calibrationFrameCount <= 10) {
+      // Faster calibration for web
       _baselineBlueLevel =
           ((_baselineBlueLevel * (_calibrationFrameCount - 1)) +
               blueIntensity) /
@@ -179,7 +155,7 @@ class BlueLightDetector {
     } else {
       _baselineCalibrated = true;
       if (kDebugMode) {
-        print('Baseline calibrated: $_baselineBlueLevel');
+        print('Web baseline calibrated: $_baselineBlueLevel');
       }
     }
   }
@@ -257,9 +233,11 @@ class BlueLightDetector {
     _frameHistory.clear();
     _consistentFrameCount = 0;
     _currentWaitingState = false;
-    _baselineBlueLevel = 0.0;
+    _baselineBlueLevel = 0.15;
     _baselineCalibrated = false;
     _calibrationFrameCount = 0;
+    _lastStateChange = null;
+    _simulationCycle = 0;
   }
 
   /// Get detection statistics
@@ -272,12 +250,14 @@ class BlueLightDetector {
       'baselineCalibrated': _baselineCalibrated,
       'calibrationFrameCount': _calibrationFrameCount,
       'confidence': _calculateConfidence(),
+      'simulationCycle': _simulationCycle,
+      'lastStateChange': _lastStateChange?.toIso8601String(),
     };
   }
 }
 
-/// Result of blue light detection analysis
-class DetectionResult {
+/// Result of web blue light detection simulation
+class WebDetectionResult {
   final double blueIntensity;
   final double amplifiedIntensity;
   final double normalizedIntensity;
@@ -287,9 +267,10 @@ class DetectionResult {
   final double baselineLevel;
   final double sensitivityMultiplier;
   final DateTime timestamp;
+  final bool isSimulated;
   final String? error;
 
-  const DetectionResult({
+  const WebDetectionResult({
     required this.blueIntensity,
     required this.amplifiedIntensity,
     required this.normalizedIntensity,
@@ -299,10 +280,11 @@ class DetectionResult {
     required this.baselineLevel,
     required this.sensitivityMultiplier,
     required this.timestamp,
+    required this.isSimulated,
     this.error,
   });
 
-  DetectionResult.error(String errorMessage)
+  WebDetectionResult.error(String errorMessage)
     : blueIntensity = 0.0,
       amplifiedIntensity = 0.0,
       normalizedIntensity = 0.0,
@@ -312,22 +294,23 @@ class DetectionResult {
       baselineLevel = 0.0,
       sensitivityMultiplier = 1.0,
       timestamp = DateTime.now(),
+      isSimulated = true,
       error = errorMessage;
 
   bool get hasError => error != null;
 
   String getStateDescription() {
     if (hasError) return '오류 발생';
-    if (isWaitingState) return '대기인원 있음';
-    return '대기인원 없음';
+    if (isWaitingState) return '대기인원 있음 (웹 데모)';
+    return '대기인원 없음 (웹 데모)';
   }
 
   @override
   String toString() {
-    return 'DetectionResult(intensity: ${blueIntensity.toStringAsFixed(3)}, '
+    return 'WebDetectionResult(intensity: ${blueIntensity.toStringAsFixed(3)}, '
         'amplified: ${amplifiedIntensity.toStringAsFixed(3)}, '
         'multiplier: ×${sensitivityMultiplier.toStringAsFixed(1)}, '
         'waiting: $isWaitingState, changed: $stateChanged, '
-        'confidence: ${confidence.toStringAsFixed(2)})';
+        'confidence: ${confidence.toStringAsFixed(2)}, simulated: $isSimulated)';
   }
 }

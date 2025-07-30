@@ -54,17 +54,20 @@ class ModeCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isEnabled ? color : Colors.grey,
                     shape: BoxShape.circle,
-                    boxShadow: isEnabled ? [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ] : null,
+                    boxShadow:
+                        isEnabled
+                            ? [
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                            : null,
                   ),
                   child: Icon(
-                    icon, 
-                    color: isEnabled ? Colors.white : Colors.grey[300], 
+                    icon,
+                    color: isEnabled ? Colors.white : Colors.grey[300],
                     size: 30,
                   ),
                 ),
@@ -82,15 +85,17 @@ class ModeCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: isEnabled ? Colors.grey[800] : Colors.grey[500],
+                          color:
+                              isEnabled ? Colors.grey[800] : Colors.grey[500],
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
                         style: TextStyle(
-                          fontSize: 14, 
-                          color: isEnabled ? Colors.grey[600] : Colors.grey[400],
+                          fontSize: 14,
+                          color:
+                              isEnabled ? Colors.grey[600] : Colors.grey[400],
                         ),
                       ),
                     ],

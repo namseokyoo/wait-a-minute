@@ -3,7 +3,8 @@
 // It's used for web deployment with environment variables.
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 /// Web-specific Firebase options that can be configured via environment variables
 class WebFirebaseOptions {
@@ -50,7 +51,8 @@ class WebFirebaseOptions {
     messagingSenderId: '916245422977',
     projectId: 'wait-a-minute-38848',
     authDomain: 'wait-a-minute-38848.firebaseapp.com',
-    databaseURL: 'https://wait-a-minute-38848-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://wait-a-minute-38848-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'wait-a-minute-38848.firebasestorage.app',
   );
 }

@@ -61,19 +61,16 @@ class WebSocketMessage {
 /// Status update message from CCTV to Monitor
 class StatusUpdateMessage extends WebSocketMessage {
   StatusUpdateMessage({
-    required String deviceId,
-    required String deviceName,
+    required super.deviceId,
+    required super.deviceName,
     required bool isMonitoring,
     required bool isOnline,
     required double blueIntensity,
     required double batteryLevel,
     required String location,
-    DateTime? timestamp,
+    super.timestamp,
   }) : super(
          type: MessageType.statusUpdate,
-         deviceId: deviceId,
-         deviceName: deviceName,
-         timestamp: timestamp,
          payload: {
            'isMonitoring': isMonitoring,
            'isOnline': isOnline,
@@ -87,17 +84,14 @@ class StatusUpdateMessage extends WebSocketMessage {
 /// Settings sync message from Monitor to CCTV
 class SettingsSyncMessage extends WebSocketMessage {
   SettingsSyncMessage({
-    required String deviceId,
-    required String deviceName,
+    required super.deviceId,
+    required super.deviceName,
     required double blueSensitivity,
     required bool pushAlertsEnabled,
     required List<String> targetDevices,
-    DateTime? timestamp,
+    super.timestamp,
   }) : super(
          type: MessageType.settingsSync,
-         deviceId: deviceId,
-         deviceName: deviceName,
-         timestamp: timestamp,
          payload: {
            'blueSensitivity': blueSensitivity,
            'pushAlertsEnabled': pushAlertsEnabled,
@@ -109,18 +103,15 @@ class SettingsSyncMessage extends WebSocketMessage {
 /// Customer waiting alert message
 class CustomerWaitingMessage extends WebSocketMessage {
   CustomerWaitingMessage({
-    required String deviceId,
-    required String deviceName,
+    required super.deviceId,
+    required super.deviceName,
     required String message,
     required double intensity,
     required String location,
     required double duration,
-    DateTime? timestamp,
+    super.timestamp,
   }) : super(
          type: MessageType.customerWaiting,
-         deviceId: deviceId,
-         deviceName: deviceName,
-         timestamp: timestamp,
          payload: {
            'message': message,
            'intensity': intensity,

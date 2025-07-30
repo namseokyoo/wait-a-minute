@@ -23,11 +23,11 @@ class FirebaseInitializationService {
   /// Firebase 및 인증 초기화 완료까지 대기
   Future<bool> waitForInitialization() async {
     if (isFullyInitialized) return true;
-    
+
     if (!_initializationCompleter.isCompleted) {
       return _initializationCompleter.future;
     }
-    
+
     return isFullyInitialized;
   }
 
@@ -50,7 +50,7 @@ class FirebaseInitializationService {
         }
       }
       _isFirebaseInitialized = true;
-      
+
       _checkAndCompleteInitialization();
       return true;
     } catch (e) {
@@ -76,7 +76,9 @@ class FirebaseInitializationService {
         }
         final credential = await FirebaseAuth.instance.signInAnonymously();
         if (kDebugMode) {
-          print('FirebaseInitializationService: 익명 인증 완료 - ${credential.user?.uid}');
+          print(
+            'FirebaseInitializationService: 익명 인증 완료 - ${credential.user?.uid}',
+          );
         }
       } else {
         if (kDebugMode) {
@@ -85,10 +87,10 @@ class FirebaseInitializationService {
       }
 
       _isAuthInitialized = true;
-      
+
       // 인증 상태가 안정화될 때까지 잠시 대기
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       _checkAndCompleteInitialization();
       return true;
     } catch (e) {

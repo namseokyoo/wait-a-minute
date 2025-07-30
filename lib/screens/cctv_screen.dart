@@ -71,15 +71,15 @@ class _CCTVScreenState extends State<CCTVScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    
+
     // 앱이 종료되거나 백그라운드로 이동할 때 정리 작업 수행
-    if (state == AppLifecycleState.paused || 
+    if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached ||
         state == AppLifecycleState.inactive) {
       if (kDebugMode) {
         print('CCTVScreen: 앱 라이프사이클 변화 감지 ($state) - 정리 작업 수행');
       }
-      
+
       // Firebase에서 디바이스 정리 (백그라운드에서 수행)
       _cameraService.removeDeviceFromFirebase().catchError((e) {
         if (kDebugMode) {
@@ -275,11 +275,7 @@ class _CCTVScreenState extends State<CCTVScreen> with WidgetsBindingObserver {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.visibility_off,
-                size: 80,
-                color: Colors.grey[600],
-              ),
+              Icon(Icons.visibility_off, size: 80, color: Colors.grey[600]),
               const SizedBox(height: 20),
               Text(
                 '화면 가리기 모드',
@@ -292,18 +288,12 @@ class _CCTVScreenState extends State<CCTVScreen> with WidgetsBindingObserver {
               const SizedBox(height: 12),
               Text(
                 '모니터링은 백그라운드에서 계속 진행됩니다',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 16),
               ),
               const SizedBox(height: 8),
               Text(
                 '화면을 다시 보려면 화면 보기 버튼을 누르세요',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
               ),
             ],
           ),
@@ -517,9 +507,7 @@ class _CCTVScreenState extends State<CCTVScreen> with WidgetsBindingObserver {
       child: IconButton(
         onPressed: () {
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const CCTVSettingsScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const CCTVSettingsScreen()),
           );
         },
         icon: const Icon(Icons.settings, color: Colors.white, size: 24),

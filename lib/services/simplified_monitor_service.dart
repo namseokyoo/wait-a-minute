@@ -7,7 +7,8 @@ import 'firebase_realtime_service.dart';
 import 'local_notification_service.dart';
 
 /// Monitor service for receiving real-time waiting state updates
-class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserver {
+class SimplifiedMonitorService extends ChangeNotifier
+    with WidgetsBindingObserver {
   // Settings controlled by Monitor
   bool _pushAlertsEnabled = true;
   double _blueSensitivity = 0.7;
@@ -20,30 +21,31 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
   final WaitingStateService? _waitingStateService;
   bool _isWaitingState = false;
   VoidCallback? _waitingStateListener;
-  
+
   // Firebase integration for background monitoring
   final FirebaseRealtimeService _firebaseService = FirebaseRealtimeService();
-  final LocalNotificationService _notificationService = LocalNotificationService();
+  final LocalNotificationService _notificationService =
+      LocalNotificationService();
   StreamSubscription? _firebaseListener;
   bool _backgroundMonitoringEnabled = false;
-  
+
   // Monitor device management
   String? _monitorDeviceId;
   Timer? _keepAliveTimer;
-  
+
   // App lifecycle management - using WidgetsBindingObserver instead
 
   SimplifiedMonitorService({WaitingStateService? waitingStateService})
     : _waitingStateService = waitingStateService {
     // Create and store the listener function
     _waitingStateListener = _onWaitingStateChanged;
-    
+
     // Listen to waiting state changes
     _waitingStateService?.addListener(_waitingStateListener!);
-    
+
     // Generate unique monitor device ID
     _monitorDeviceId = _generateMonitorId();
-    
+
     // Setup app lifecycle observer
     WidgetsBinding.instance.addObserver(this);
   }
@@ -100,7 +102,9 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
         initialized = await _firebaseService.initialize();
         if (!initialized) {
           if (kDebugMode) {
-            print('SimplifiedMonitorService: Firebase 초기화 재시도 실패 - 백그라운드 모니터링 불가');
+            print(
+              'SimplifiedMonitorService: Firebase 초기화 재시도 실패 - 백그라운드 모니터링 불가',
+            );
           }
           return;
         }
@@ -109,7 +113,9 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
       // Initialize notification service
       final notificationInitialized = await _notificationService.initialize();
       if (kDebugMode) {
-        print('SimplifiedMonitorService: 알림 서비스 초기화 ${notificationInitialized ? "성공" : "실패"}');
+        print(
+          'SimplifiedMonitorService: 알림 서비스 초기화 ${notificationInitialized ? "성공" : "실패"}',
+        );
       }
 
       // Register this device as a monitor
@@ -119,7 +125,9 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
       if (kDebugMode) {
         print('SimplifiedMonitorService: Firebase 리스너 시작');
       }
-      _firebaseListener = _firebaseService.watchAllDevices(_onFirebaseDevicesUpdate);
+      _firebaseListener = _firebaseService.watchAllDevices(
+        _onFirebaseDevicesUpdate,
+      );
 
       // Start keepalive timer to maintain monitor presence
       _startKeepAliveTimer();
@@ -128,13 +136,15 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
       notifyListeners();
 
       if (kDebugMode) {
-        print('SimplifiedMonitorService: 백그라운드 모니터링 시작 완료 (Monitor ID: $_monitorDeviceId)');
+        print(
+          'SimplifiedMonitorService: 백그라운드 모니터링 시작 완료 (Monitor ID: $_monitorDeviceId)',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
         print('SimplifiedMonitorService: 백그라운드 모니터링 시작 실패 - $e');
       }
-      
+
       // 실패 시 상태 정리
       _backgroundMonitoringEnabled = false;
       _firebaseListener?.cancel();
@@ -153,12 +163,12 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
     _firebaseListener = null;
     _keepAliveTimer?.cancel();
     _keepAliveTimer = null;
-    
+
     // Remove monitor from Firebase only when explicitly stopping
     if (_monitorDeviceId != null) {
       _firebaseService.removeMonitor(_monitorDeviceId!);
     }
-    
+
     _backgroundMonitoringEnabled = false;
     notifyListeners();
 
@@ -182,19 +192,19 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
     for (final entry in devices.entries) {
       final deviceId = entry.key;
       final deviceData = Map<String, dynamic>.from(entry.value);
-      
+
       if (kDebugMode) {
         print('처리 중인 기기: $deviceId');
         print('기기 데이터: $deviceData');
       }
-      
+
       // Extract device status
       final status = deviceData['status'] as Map<String, dynamic>?;
       if (status != null) {
         final isWaiting = status['isWaiting'] as bool? ?? false;
         final isOnline = status['isOnline'] as bool? ?? false;
         final blueIntensity = status['blueIntensity'] as double? ?? 0.0;
-        
+
         // Update local device tracking
         _connectedDevices[deviceId] = {
           'deviceId': deviceId,
@@ -225,12 +235,16 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
     notifyListeners();
 
     if (kDebugMode && previousWaitingState != _isWaitingState) {
-      print('SimplifiedMonitorService: 대기 상태 변경 - $_isWaitingState (기기 ${waitingDevices.length}개)');
+      print(
+        'SimplifiedMonitorService: 대기 상태 변경 - $_isWaitingState (기기 ${waitingDevices.length}개)',
+      );
     }
   }
 
   /// Send notification for waiting state
-  Future<void> _sendWaitingNotification(List<Map<String, dynamic>> waitingDevices) async {
+  Future<void> _sendWaitingNotification(
+    List<Map<String, dynamic>> waitingDevices,
+  ) async {
     if (!_pushAlertsEnabled || waitingDevices.isEmpty) return;
 
     try {
@@ -239,7 +253,8 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
 
       if (waitingDevices.isNotEmpty) {
         final firstDevice = waitingDevices.first;
-        final deviceInfo = firstDevice['deviceInfo'] as Map<String, dynamic>? ?? {};
+        final deviceInfo =
+            firstDevice['deviceInfo'] as Map<String, dynamic>? ?? {};
         deviceName = deviceInfo['name'] as String? ?? '감지 기기';
         location = deviceInfo['location'] as String? ?? '';
       }
@@ -323,7 +338,6 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
     _updateGlobalBlueDetection();
   }
 
-
   /// Handle waiting state changes from WaitingStateService
   void _onWaitingStateChanged() {
     if (_waitingStateService != null) {
@@ -352,7 +366,7 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     super.didChangeAppLifecycleState(state);
-    
+
     switch (state) {
       case AppLifecycleState.resumed:
         if (kDebugMode) {
@@ -368,7 +382,7 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
           await _ensureMonitorRegistration();
         }
         break;
-        
+
       case AppLifecycleState.paused:
         if (kDebugMode) {
           print('SimplifiedMonitorService: 앱이 백그라운드로 전환됨');
@@ -376,13 +390,13 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
         // Update monitor status for background mode
         await _updateMonitorStatus(isBackground: true);
         break;
-        
+
       case AppLifecycleState.inactive:
         if (kDebugMode) {
           print('SimplifiedMonitorService: 앱이 비활성 상태로 전환됨');
         }
         break;
-        
+
       case AppLifecycleState.detached:
         if (kDebugMode) {
           print('SimplifiedMonitorService: 앱이 종료됨 - 강제 정리 시작');
@@ -390,7 +404,7 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
         // Force cleanup when app is being terminated
         await _forceCleanupMonitor();
         break;
-        
+
       case AppLifecycleState.hidden:
         if (kDebugMode) {
           print('SimplifiedMonitorService: 앱이 숨겨짐');
@@ -412,7 +426,7 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
       if (kDebugMode) {
         print('SimplifiedMonitorService: 모니터 등록 시작 - $_monitorDeviceId');
       }
-      
+
       // Firebase 서비스가 초기화되어 있는지 확인
       if (!_firebaseService.isInitialized) {
         if (kDebugMode) {
@@ -463,15 +477,15 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
       if (kDebugMode) {
         print('SimplifiedMonitorService: 강제 정리 시작');
       }
-      
+
       // Stop keepalive timer
       _keepAliveTimer?.cancel();
       _keepAliveTimer = null;
-      
+
       // Cancel Firebase listener
       _firebaseListener?.cancel();
       _firebaseListener = null;
-      
+
       // Remove monitor from Firebase
       if (_monitorDeviceId != null) {
         await _firebaseService.removeMonitor(_monitorDeviceId!);
@@ -479,9 +493,9 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
           print('SimplifiedMonitorService: Firebase에서 모니터 제거 완료');
         }
       }
-      
+
       _backgroundMonitoringEnabled = false;
-      
+
       if (kDebugMode) {
         print('SimplifiedMonitorService: 강제 정리 완료');
       }
@@ -495,15 +509,17 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
   /// Update monitor status (for background/foreground transitions)
   Future<void> _updateMonitorStatus({required bool isBackground}) async {
     if (_monitorDeviceId == null || !_backgroundMonitoringEnabled) return;
-    
+
     try {
       await _firebaseService.registerMonitorDevice(
         _monitorDeviceId!,
         '모니터링 기기',
       );
-      
+
       if (kDebugMode) {
-        print('SimplifiedMonitorService: 모니터 상태 업데이트 - background: $isBackground');
+        print(
+          'SimplifiedMonitorService: 모니터 상태 업데이트 - background: $isBackground',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
@@ -515,10 +531,10 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
   /// Ensure monitor registration (enhanced re-registration)
   Future<void> _ensureMonitorRegistration() async {
     if (!_backgroundMonitoringEnabled || _monitorDeviceId == null) return;
-    
+
     int attempts = 0;
     const maxAttempts = 3;
-    
+
     while (attempts < maxAttempts) {
       try {
         // Check Firebase connection
@@ -526,26 +542,25 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
         if (!isConnected) {
           await _firebaseService.initialize();
         }
-        
+
         // Re-register monitor
         await _registerAsMonitor();
-        
+
         // Restart Firebase listener if needed
-        if (_firebaseListener == null) {
-          _firebaseListener = _firebaseService.watchAllDevices(_onFirebaseDevicesUpdate);
-        }
-        
+        _firebaseListener ??= _firebaseService.watchAllDevices(
+          _onFirebaseDevicesUpdate,
+        );
+
         if (kDebugMode) {
           print('SimplifiedMonitorService: 모니터 재등록 성공');
         }
         break;
-        
       } catch (e) {
         attempts++;
         if (kDebugMode) {
           print('SimplifiedMonitorService: 재등록 시도 $attempts 실패: $e');
         }
-        
+
         if (attempts < maxAttempts) {
           // Exponential backoff
           await Future.delayed(Duration(seconds: attempts * 2));
@@ -562,16 +577,16 @@ class SimplifiedMonitorService extends ChangeNotifier with WidgetsBindingObserve
   void dispose() {
     // Stop background monitoring
     stopBackgroundMonitoring();
-    
+
     // Remove app lifecycle observer
     WidgetsBinding.instance.removeObserver(this);
-    
+
     // Remove listener from waiting state service
     if (_waitingStateListener != null) {
       _waitingStateService?.removeListener(_waitingStateListener!);
       _waitingStateListener = null;
     }
-    
+
     super.dispose();
   }
 }
