@@ -1,16 +1,35 @@
-  {
-    "rules": {
-      "devices": {
-        ".read": true,
-        ".write": true
-      },
-      "monitors": {
-        ".read": true,
-        ".write": true
-      },
-      "alerts": {
-        ".read": true,
-        ".write": true
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "devices": {
+      ".read": true,
+      ".write": false,
+      "$deviceId": {
+        ".write": "auth != null",
+        "deviceInfo": {
+          ".validate": "newData.hasChildren(['name', 'location', 'mode'])"
+        },
+        "status": {
+          ".validate": "newData.hasChildren(['isOnline', 'lastUpdate'])"
+        }
+      }
+    },
+    "monitors": {
+      ".read": true,
+      ".write": false,
+      "$monitorId": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['deviceName', 'isOnline', 'lastSeen'])"
+      }
+    },
+    "alerts": {
+      ".read": true,
+      ".write": false,
+      "$alertId": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['deviceId', 'message', 'timestamp'])"
       }
     }
   }
+}
