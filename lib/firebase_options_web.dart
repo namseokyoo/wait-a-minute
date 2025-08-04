@@ -46,13 +46,12 @@ class WebFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA9HRACC8C4tW54RyESNJDnbjkkxzjs-0M',
-    appId: '1:916245422977:web:4fed445a3767b604b2be80',
+    apiKey: 'AIzaSyCtQZwwo-E0UmmhYNhXAMe3ez_Sk0u3LzQ',
+    appId: '1:916245422977:web:17089edf3e989849b2be80',
     messagingSenderId: '916245422977',
     projectId: 'wait-a-minute-38848',
     authDomain: 'wait-a-minute-38848.firebaseapp.com',
-    databaseURL:
-        'https://wait-a-minute-38848-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL: 'https://wait-a-minute-38848-default-rtdb.firebaseio.com',
     storageBucket: 'wait-a-minute-38848.firebasestorage.app',
   );
 }
