@@ -72,9 +72,33 @@ class FirebaseInitializationService {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         if (kDebugMode) {
-          print('FirebaseInitializationService: 익명 인증 시작');
+          print('FirebaseInitializationService: 익명 인증 시작 (웹: $kIsWeb)');
         }
-        final credential = await FirebaseAuth.instance.signInAnonymously();
+        
+        // 웹에서 더 안정적인 인증을 위해 재시도 로직 추가
+        UserCredential? credential;
+        int attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts && credential == null) {
+          try {
+            credential = await FirebaseAuth.instance.signInAnonymously();
+            break;
+          } catch (e) {
+            attempts++;
+            if (kDebugMode) {
+              print('FirebaseInitializationService: 인증 시도 $attempts 실패 - $e');
+            }
+            if (attempts < maxAttempts) {
+              await Future.delayed(Duration(seconds: attempts));
+            }
+          }
+        }
+        
+        if (credential == null) {
+          throw Exception('익명 인증 실패 (모든 시도 소진)');
+        }
+        
         if (kDebugMode) {
           print(
             'FirebaseInitializationService: 익명 인증 완료 - ${credential.user?.uid}',
@@ -89,7 +113,7 @@ class FirebaseInitializationService {
       _isAuthInitialized = true;
 
       // 인증 상태가 안정화될 때까지 잠시 대기
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 1000));
 
       _checkAndCompleteInitialization();
       return true;

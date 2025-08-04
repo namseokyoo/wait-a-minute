@@ -148,14 +148,18 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
   /// Firebase 비동기 초기화 (카메라 초기화와 독립적)
   Future<void> _initializeFirebaseAsync() async {
     try {
+      if (kDebugMode) {
+        print('CameraService: Firebase 초기화 시작 (웹: ${kIsWeb})');
+      }
+
       final success = await _firebaseService.initialize();
       if (success) {
-        // Register device info in Firebase
-        await _firebaseService.updateDeviceInfo(_deviceId, {
-          'name': _deviceName,
-          'location': _location,
-          'mode': 'cctv',
-        });
+        if (kDebugMode) {
+          print('CameraService: Firebase 초기화 성공, 기기 등록 중...');
+        }
+
+        // Register device info in Firebase with retry logic
+        await _registerDeviceWithRetry();
 
         if (kDebugMode) {
           print('Firebase initialized and device registered successfully');
@@ -172,6 +176,43 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
         print('Firebase async initialization error: $e');
       }
       // Firebase 실패해도 에러 메시지 설정하지 않음 (카메라는 정상 작동)
+    }
+  }
+
+  /// Register device with retry logic for better reliability
+  Future<void> _registerDeviceWithRetry() async {
+    int attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        await _firebaseService.updateDeviceInfo(_deviceId, {
+          'name': _deviceName,
+          'location': _location,
+          'mode': 'cctv',
+          'platform': kIsWeb ? 'web' : 'mobile',
+          'registeredAt': DateTime.now().millisecondsSinceEpoch,
+        });
+
+        if (kDebugMode) {
+          print('CameraService: 기기 등록 성공 - $_deviceId');
+        }
+        return; // Success, exit retry loop
+      } catch (e) {
+        attempts++;
+        if (kDebugMode) {
+          print('CameraService: 기기 등록 시도 $attempts 실패: $e');
+        }
+        
+        if (attempts < maxAttempts) {
+          await Future.delayed(Duration(seconds: attempts * 2));
+        } else {
+          if (kDebugMode) {
+            print('CameraService: 기기 등록 최대 시도 횟수 초과');
+          }
+          rethrow;
+        }
+      }
     }
   }
 

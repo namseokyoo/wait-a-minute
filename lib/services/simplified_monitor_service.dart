@@ -441,10 +441,7 @@ class SimplifiedMonitorService extends ChangeNotifier
         }
       }
 
-      await _firebaseService.registerMonitorDevice(
-        _monitorDeviceId!,
-        '모니터링 기기',
-      );
+      await _registerMonitorWithRetry();
 
       if (kDebugMode) {
         print('SimplifiedMonitorService: 모니터 기기 등록 완료 - $_monitorDeviceId');
@@ -452,6 +449,42 @@ class SimplifiedMonitorService extends ChangeNotifier
     } catch (e) {
       if (kDebugMode) {
         print('SimplifiedMonitorService: 모니터 기기 등록 실패 - $e');
+      }
+    }
+  }
+
+  /// Register monitor device with retry logic for better reliability
+  Future<void> _registerMonitorWithRetry() async {
+    if (_monitorDeviceId == null) return;
+
+    int attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        await _firebaseService.registerMonitorDevice(
+          _monitorDeviceId!,
+          kIsWeb ? '웹 모니터링 기기' : '모바일 모니터링 기기',
+        );
+
+        if (kDebugMode) {
+          print('SimplifiedMonitorService: 모니터 등록 성공 - $_monitorDeviceId');
+        }
+        return; // Success, exit retry loop
+      } catch (e) {
+        attempts++;
+        if (kDebugMode) {
+          print('SimplifiedMonitorService: 모니터 등록 시도 $attempts 실패: $e');
+        }
+        
+        if (attempts < maxAttempts) {
+          await Future.delayed(Duration(seconds: attempts * 2));
+        } else {
+          if (kDebugMode) {
+            print('SimplifiedMonitorService: 모니터 등록 최대 시도 횟수 초과');
+          }
+          rethrow;
+        }
       }
     }
   }
