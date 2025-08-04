@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'waiting_state_service.dart';
 import 'firebase_realtime_service.dart';
 import 'local_notification_service.dart';
+import 'web_lifecycle_service.dart';
 
 /// Monitor service for receiving real-time waiting state updates
 class SimplifiedMonitorService extends ChangeNotifier
@@ -33,6 +34,9 @@ class SimplifiedMonitorService extends ChangeNotifier
   String? _monitorDeviceId;
   Timer? _keepAliveTimer;
 
+  // Web lifecycle management for browser events
+  final WebLifecycleService _webLifecycleService = WebLifecycleService();
+
   // App lifecycle management - using WidgetsBindingObserver instead
 
   SimplifiedMonitorService({WaitingStateService? waitingStateService})
@@ -48,6 +52,11 @@ class SimplifiedMonitorService extends ChangeNotifier
 
     // Setup app lifecycle observer
     WidgetsBinding.instance.addObserver(this);
+
+    // Setup web lifecycle management for browser events
+    if (kIsWeb) {
+      _initializeWebLifecycleManagement();
+    }
   }
 
   // Getters
@@ -606,10 +615,235 @@ class SimplifiedMonitorService extends ChangeNotifier
     }
   }
 
+  /// Initialize web lifecycle management for browser-specific events
+  void _initializeWebLifecycleManagement() {
+    try {
+      _webLifecycleService.initialize();
+
+      // Register callbacks for browser lifecycle events
+      _webLifecycleService.addVisibilityCallback(_onWebVisibilityChanged);
+      _webLifecycleService.addFocusCallback(_onWebFocusChanged);
+      _webLifecycleService.addConnectionCallback(_onWebConnectionChanged);
+
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 생명주기 관리 초기화 완료');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 생명주기 관리 초기화 실패 - $e');
+      }
+    }
+  }
+
+  /// Handle web visibility changes (tab switching)
+  void _onWebVisibilityChanged(bool isVisible) {
+    if (kDebugMode) {
+      print('SimplifiedMonitorService: 웹 가시성 변경 - ${isVisible ? "표시" : "숨김"}');
+    }
+
+    if (!_backgroundMonitoringEnabled || _monitorDeviceId == null) return;
+
+    if (isVisible) {
+      // Tab became visible - re-register monitor and strengthen connection
+      _handleWebTabVisible();
+    } else {
+      // Tab became hidden - maintain connection but reduce activity
+      _handleWebTabHidden();
+    }
+  }
+
+  /// Handle web focus changes (window switching)
+  void _onWebFocusChanged(bool isFocused) {
+    if (kDebugMode) {
+      print('SimplifiedMonitorService: 웹 포커스 변경 - ${isFocused ? "포커스" : "블러"}');
+    }
+
+    if (!_backgroundMonitoringEnabled || _monitorDeviceId == null) return;
+
+    if (isFocused) {
+      // Window gained focus - ensure strong connection
+      _handleWebWindowFocused();
+    } else {
+      // Window lost focus - maintain background connection
+      _handleWebWindowBlurred();
+    }
+  }
+
+  /// Handle web connection changes
+  void _onWebConnectionChanged(bool isOnline) {
+    if (kDebugMode) {
+      print('SimplifiedMonitorService: 웹 연결 상태 변경 - ${isOnline ? "온라인" : "오프라인"}');
+    }
+
+    if (!_backgroundMonitoringEnabled || _monitorDeviceId == null) return;
+
+    if (isOnline) {
+      // Connection restored - re-establish Firebase connection
+      _handleWebConnectionRestored();
+    } else {
+      // Connection lost - prepare for offline mode
+      _handleWebConnectionLost();
+    }
+  }
+
+  /// Handle web tab becoming visible
+  Future<void> _handleWebTabVisible() async {
+    try {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 탭이 표시됨 - 모니터 재등록 시작');
+      }
+
+      // Re-register monitor to ensure it's not marked as offline
+      await _ensureMonitorRegistration();
+
+      // Restart keepalive timer if it was stopped
+      if (_keepAliveTimer?.isActive != true) {
+        _startKeepAliveTimer();
+      }
+
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 탭 표시 처리 완료');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 탭 표시 처리 실패 - $e');
+      }
+    }
+  }
+
+  /// Handle web tab becoming hidden
+  Future<void> _handleWebTabHidden() async {
+    try {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 탭이 숨겨짐 - 백그라운드 모드 전환');
+      }
+
+      // Update monitor status to indicate background mode
+      await _updateMonitorStatus(isBackground: true);
+
+      // Keep the keepalive timer running but Firebase will be aware of background state
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 탭 숨김 처리 완료');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 탭 숨김 처리 실패 - $e');
+      }
+    }
+  }
+
+  /// Handle web window gaining focus
+  Future<void> _handleWebWindowFocused() async {
+    try {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 윈도우 포커스 획득 - 연결 강화');
+      }
+
+      // Ensure strong Firebase connection
+      await _ensureMonitorRegistration();
+
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 윈도우 포커스 처리 완료');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 윈도우 포커스 처리 실패 - $e');
+      }
+    }
+  }
+
+  /// Handle web window losing focus
+  Future<void> _handleWebWindowBlurred() async {
+    try {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 윈도우 포커스 상실 - 백그라운드 유지');
+      }
+
+      // Maintain background connection
+      await _updateMonitorStatus(isBackground: true);
+
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 윈도우 블러 처리 완료');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 윈도우 블러 처리 실패 - $e');
+      }
+    }
+  }
+
+  /// Handle web connection restoration
+  Future<void> _handleWebConnectionRestored() async {
+    try {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 연결 복구 - Firebase 재연결');
+      }
+
+      // Re-initialize Firebase service if needed
+      if (!_firebaseService.isInitialized) {
+        await _firebaseService.initialize();
+      }
+
+      // Re-register monitor
+      await _ensureMonitorRegistration();
+
+      // Restart Firebase listener if needed
+      _firebaseListener ??= _firebaseService.watchAllDevices(
+        _onFirebaseDevicesUpdate,
+      );
+
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 연결 복구 처리 완료');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 연결 복구 처리 실패 - $e');
+      }
+    }
+  }
+
+  /// Handle web connection loss
+  Future<void> _handleWebConnectionLost() async {
+    try {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 연결 끊김 - 오프라인 모드 준비');
+      }
+
+      // Keep local state but prepare for offline operation
+      // The Firebase service will handle reconnection automatically
+
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 연결 끊김 처리 완료');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('SimplifiedMonitorService: 웹 연결 끊김 처리 실패 - $e');
+      }
+    }
+  }
+
   @override
   void dispose() {
     // Stop background monitoring
     stopBackgroundMonitoring();
+
+    // Cleanup web lifecycle management
+    if (kIsWeb) {
+      try {
+        _webLifecycleService.removeVisibilityCallback(_onWebVisibilityChanged);
+        _webLifecycleService.removeFocusCallback(_onWebFocusChanged);
+        _webLifecycleService.removeConnectionCallback(_onWebConnectionChanged);
+        _webLifecycleService.dispose();
+        
+        if (kDebugMode) {
+          print('SimplifiedMonitorService: 웹 생명주기 관리 정리 완료');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('SimplifiedMonitorService: 웹 생명주기 정리 실패 - $e');
+        }
+      }
+    }
 
     // Remove app lifecycle observer
     WidgetsBinding.instance.removeObserver(this);

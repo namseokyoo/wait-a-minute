@@ -12,6 +12,7 @@ import 'waiting_state_service.dart';
 import 'firebase_realtime_service.dart';
 import 'device_health_checker.dart';
 import 'smart_update_manager.dart';
+import 'web_lifecycle_service.dart';
 import '../models/sensitivity_settings.dart';
 
 /// Real camera service for CCTV functionality with blue light detection
@@ -48,6 +49,7 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
   final FirebaseRealtimeService _firebaseService = FirebaseRealtimeService();
   final DeviceHealthChecker _healthChecker = DeviceHealthChecker();
   final SmartUpdateManager _updateManager = SmartUpdateManager();
+  final WebLifecycleService _webLifecycle = WebLifecycleService();
   DateTime? _lastFirebaseUpdate;
   DateTime? _lastUIUpdate;
 
@@ -74,6 +76,11 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
     _loadSensitivitySettings();
     // Setup app lifecycle observer
     WidgetsBinding.instance.addObserver(this);
+    
+    // Setup web lifecycle management for browser environments
+    if (kIsWeb) {
+      _setupWebLifecycle();
+    }
   }
 
   // Getters
@@ -176,6 +183,112 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
         print('Firebase async initialization error: $e');
       }
       // Firebase 실패해도 에러 메시지 설정하지 않음 (카메라는 정상 작동)
+    }
+  }
+
+  /// Setup web lifecycle management for browser-specific behavior
+  void _setupWebLifecycle() {
+    _webLifecycle.initialize();
+    
+    // 탭 가시성 변경 콜백
+    _webLifecycle.addVisibilityCallback((isVisible) {
+      if (kDebugMode) {
+        print('CameraService: 탭 가시성 변경 - ${isVisible ? "보임" : "숨김"}');
+      }
+      
+      if (isVisible) {
+        // 탭이 다시 보일 때 Firebase 연결 상태 복구
+        _handleWebVisibilityRestore();
+      } else {
+        // 탭이 숨겨질 때 백그라운드 모드로 전환
+        _handleWebVisibilityHidden();
+      }
+    });
+    
+    // 윈도우 포커스 변경 콜백
+    _webLifecycle.addFocusCallback((isFocused) {
+      if (kDebugMode) {
+        print('CameraService: 윈도우 포커스 변경 - ${isFocused ? "포커스" : "블러"}');
+      }
+      
+      if (isFocused) {
+        _handleWebFocusRestore();
+      } else {
+        _handleWebFocusLost();
+      }
+    });
+    
+    // 네트워크 연결 상태 콜백
+    _webLifecycle.addConnectionCallback((isOnline) {
+      if (kDebugMode) {
+        print('CameraService: 네트워크 상태 변경 - ${isOnline ? "온라인" : "오프라인"}');
+      }
+      
+      if (isOnline && _isMonitoring) {
+        // 네트워크 복구 시 Firebase 재연결
+        _handleWebConnectionRestore();
+      }
+    });
+  }
+
+  /// 웹 탭 가시성 복구 처리
+  void _handleWebVisibilityRestore() {
+    if (_isMonitoring) {
+      // Firebase 상태 즉시 업데이트
+      _firebaseService.updateDeviceStatus(_deviceId, {
+        'isWaiting': _isWaitingState,
+        'blueIntensity': _blueIntensity,
+        'isOnline': true,
+        'isMonitoring': _isMonitoring,
+        'batteryLevel': _batteryLevel,
+        'isBackground': false,
+        'lastUpdate': DateTime.now().millisecondsSinceEpoch,
+        'visibilityRestored': DateTime.now().millisecondsSinceEpoch,
+      });
+    }
+  }
+
+  /// 웹 탭 가시성 숨김 처리
+  void _handleWebVisibilityHidden() {
+    if (_isMonitoring) {
+      // 백그라운드 상태로 마킹하되 온라인 유지
+      _firebaseService.updateDeviceStatus(_deviceId, {
+        'isOnline': true,
+        'isBackground': true,
+        'backgroundMode': 'hidden',
+        'lastUpdate': DateTime.now().millisecondsSinceEpoch,
+      });
+    }
+  }
+
+  /// 웹 포커스 복구 처리
+  void _handleWebFocusRestore() {
+    if (_isMonitoring) {
+      // 포커스 복구 시 연결 상태 재확인
+      _reregisterDevice();
+    }
+  }
+
+  /// 웹 포커스 상실 처리
+  void _handleWebFocusLost() {
+    if (_isMonitoring) {
+      // 포커스 상실 시에도 온라인 상태 유지
+      _firebaseService.updateDeviceStatus(_deviceId, {
+        'isOnline': true,
+        'isBackground': true,
+        'backgroundMode': 'unfocused',
+        'lastUpdate': DateTime.now().millisecondsSinceEpoch,
+      });
+    }
+  }
+
+  /// 웹 네트워크 연결 복구 처리
+  void _handleWebConnectionRestore() {
+    if (_isMonitoring) {
+      // 네트워크 복구 시 즉시 재등록
+      Future.delayed(Duration(seconds: 1), () {
+        _reregisterDevice();
+      });
     }
   }
 

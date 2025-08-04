@@ -18,19 +18,19 @@ class BatchCleanupManager {
   int _totalCleanedAlerts = 0;
   DateTime _lastCleanupTime = DateTime.now();
 
-  // Cleanup thresholds
+  // Cleanup thresholds - 웹 환경 호환성을 위해 더 관대한 설정
   static const Duration _offlineThreshold = Duration(
-    minutes: 5,
-  ); // Devices offline for 5+ minutes
+    minutes: 30,
+  ); // Devices offline for 30+ minutes (웹 환경 고려)
   static const Duration _alertRetentionPeriod = Duration(
     hours: 24,
   ); // Keep alerts for 24 hours
   static const Duration _monitorOfflineThreshold = Duration(
-    minutes: 10,
-  ); // Monitors offline for 10+ minutes
+    minutes: 30,
+  ); // Monitors offline for 30+ minutes (웹 환경 고려)
   static const Duration _cleanupInterval = Duration(
-    minutes: 15,
-  ); // Run cleanup every 15 minutes
+    minutes: 30,
+  ); // Run cleanup every 30 minutes (덜 공격적으로)
 
   /// Initialize and start batch cleanup with configurable interval
   void startBatchCleanup({
@@ -161,16 +161,39 @@ class BatchCleanupManager {
             }
 
             // Remove if no updates for more than threshold (ghost devices)
+            // 웹 환경에서는 더 관대하게 처리
             if (lastUpdate != null) {
               final updateAge = now - lastUpdate;
               if (updateAge > _offlineThreshold.inMilliseconds) {
-                shouldRemove = true;
+                // 웹 플랫폼인 경우 추가 시간 부여
+                final deviceInfo = deviceData['deviceInfo'] as Map<String, dynamic>?;
+                final platform = deviceInfo?['platform'] as String?;
+                
+                if (platform == 'web') {
+                  // 웹은 1시간까지 여유 시간 부여
+                  if (updateAge > const Duration(hours: 1).inMilliseconds) {
+                    shouldRemove = true;
+                  }
+                } else {
+                  shouldRemove = true;
+                }
               }
             }
 
-            // Remove devices with no status updates at all
+            // Remove devices with no status updates at all (하지만 등록된 지 얼마 안 된 경우 제외)
             if (lastUpdate == null && disconnectedAt == null) {
-              shouldRemove = true;
+              final deviceInfo = deviceData['deviceInfo'] as Map<String, dynamic>?;
+              final registeredAt = deviceInfo?['registeredAt'] as int?;
+              
+              if (registeredAt != null) {
+                final registrationAge = now - registeredAt;
+                // 등록된 지 10분 이상 된 경우에만 삭제
+                if (registrationAge > const Duration(minutes: 10).inMilliseconds) {
+                  shouldRemove = true;
+                }
+              } else {
+                shouldRemove = true;
+              }
             }
 
             if (shouldRemove) {
