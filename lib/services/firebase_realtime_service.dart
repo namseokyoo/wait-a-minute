@@ -89,7 +89,11 @@ class FirebaseRealtimeService extends ChangeNotifier {
       }
 
       // Start batch cleanup system after successful initialization
-      _batchCleanupManager.startBatchCleanup(database: _database);
+      // 웹 환경에서는 8시간+ 지속 사용을 위해 기본적으로 비활성화
+      _batchCleanupManager.startBatchCleanup(
+        database: _database,
+        enableWebCleanup: false, // 웹 환경에서 자동 정리 비활성화
+      );
 
       if (kDebugMode) {
         print('FirebaseRealtimeService: 배치 정리 시스템 시작됨');

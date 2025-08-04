@@ -18,28 +18,37 @@ class BatchCleanupManager {
   int _totalCleanedAlerts = 0;
   DateTime _lastCleanupTime = DateTime.now();
 
-  // Cleanup thresholds - 웹 환경 호환성을 위해 더 관대한 설정
+  // Cleanup thresholds - 웹 환경에서는 8시간+ 지속 사용을 위해 매우 관대한 설정
   static const Duration _offlineThreshold = Duration(
-    minutes: 30,
-  ); // Devices offline for 30+ minutes (웹 환경 고려)
+    hours: 12,
+  ); // Devices offline for 12+ hours (장시간 사용 고려)
   static const Duration _alertRetentionPeriod = Duration(
-    hours: 24,
-  ); // Keep alerts for 24 hours
+    days: 7,
+  ); // Keep alerts for 7 days
   static const Duration _monitorOfflineThreshold = Duration(
-    minutes: 30,
-  ); // Monitors offline for 30+ minutes (웹 환경 고려)
+    hours: 12,
+  ); // Monitors offline for 12+ hours (장시간 사용 고려)
   static const Duration _cleanupInterval = Duration(
-    minutes: 30,
-  ); // Run cleanup every 30 minutes (덜 공격적으로)
+    hours: 6,
+  ); // Run cleanup every 6 hours (매우 덜 공격적으로)
 
   /// Initialize and start batch cleanup with configurable interval
   void startBatchCleanup({
     Duration interval = _cleanupInterval,
     DatabaseReference? database,
+    bool enableWebCleanup = false, // 웹 환경에서는 기본적으로 정리 기능 비활성화
   }) {
     if (_isCleanupActive) {
       if (kDebugMode) {
         print('BatchCleanupManager: Cleanup already active');
+      }
+      return;
+    }
+
+    // 웹 환경에서 정리 기능이 명시적으로 활성화되지 않은 경우 종료
+    if (kIsWeb && !enableWebCleanup) {
+      if (kDebugMode) {
+        print('BatchCleanupManager: Web cleanup disabled by default for 8+ hour usage');
       }
       return;
     }
@@ -161,20 +170,20 @@ class BatchCleanupManager {
             }
 
             // Remove if no updates for more than threshold (ghost devices)
-            // 웹 환경에서는 더 관대하게 처리
+            // 웹 환경에서는 8시간+ 지속 사용을 위해 매우 관대하게 처리
             if (lastUpdate != null) {
               final updateAge = now - lastUpdate;
-              if (updateAge > _offlineThreshold.inMilliseconds) {
-                // 웹 플랫폼인 경우 추가 시간 부여
-                final deviceInfo = deviceData['deviceInfo'] as Map<String, dynamic>?;
-                final platform = deviceInfo?['platform'] as String?;
-                
-                if (platform == 'web') {
-                  // 웹은 1시간까지 여유 시간 부여
-                  if (updateAge > const Duration(hours: 1).inMilliseconds) {
-                    shouldRemove = true;
-                  }
-                } else {
+              final deviceInfo = deviceData['deviceInfo'] as Map<String, dynamic>?;
+              final platform = deviceInfo?['platform'] as String?;
+              
+              if (platform == 'web') {
+                // 웹은 24시간까지 여유 시간 부여 (8시간+ 지속 사용)
+                if (updateAge > const Duration(hours: 24).inMilliseconds) {
+                  shouldRemove = true;
+                }
+              } else {
+                // 모바일은 기존 12시간 threshold 사용
+                if (updateAge > _offlineThreshold.inMilliseconds) {
                   shouldRemove = true;
                 }
               }
@@ -184,15 +193,25 @@ class BatchCleanupManager {
             if (lastUpdate == null && disconnectedAt == null) {
               final deviceInfo = deviceData['deviceInfo'] as Map<String, dynamic>?;
               final registeredAt = deviceInfo?['registeredAt'] as int?;
+              final platform = deviceInfo?['platform'] as String?;
               
               if (registeredAt != null) {
                 final registrationAge = now - registeredAt;
-                // 등록된 지 10분 이상 된 경우에만 삭제
-                if (registrationAge > const Duration(minutes: 10).inMilliseconds) {
-                  shouldRemove = true;
+                
+                if (platform == 'web') {
+                  // 웹은 6시간 이상 된 경우에만 삭제 (8시간+ 지속 사용)
+                  if (registrationAge > const Duration(hours: 6).inMilliseconds) {
+                    shouldRemove = true;
+                  }
+                } else {
+                  // 모바일은 1시간 이상 된 경우에만 삭제
+                  if (registrationAge > const Duration(hours: 1).inMilliseconds) {
+                    shouldRemove = true;
+                  }
                 }
               } else {
-                shouldRemove = true;
+                // 등록 시간이 없는 경우는 삭제하지 않음 (웹 환경 고려)
+                shouldRemove = false;
               }
             }
 
