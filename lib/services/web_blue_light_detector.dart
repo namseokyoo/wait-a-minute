@@ -1,9 +1,12 @@
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import '../models/sensitivity_settings.dart';
 
-/// Web-specific blue light detection using simulated signals
-/// Since web cannot access raw camera data, this provides a demo implementation
+// Conditional import for web platform only
+import 'dart:html' as html;
+
+/// Web-specific blue light detection using real camera data via MediaStream API
 class WebBlueLightDetector {
   // Detection parameters
   static const int _minConsistentFrames = 3;
@@ -13,16 +16,19 @@ class WebBlueLightDetector {
   final List<double> _frameHistory = [];
   int _consistentFrameCount = 0;
   bool _currentWaitingState = false;
-  double _baselineBlueLevel = 0.15; // Fixed baseline for web demo
+  double _baselineBlueLevel = 0.0;
   bool _baselineCalibrated = false;
   int _calibrationFrameCount = 0;
 
   // Sensitivity settings
   SensitivitySettings _sensitivitySettings = SensitivitySettings.standard();
 
-  // Demo simulation state
-  DateTime? _lastStateChange;
-  int _simulationCycle = 0;
+  // Web camera components
+  html.VideoElement? _videoElement;
+  html.CanvasElement? _canvasElement;
+  html.CanvasRenderingContext2D? _canvasContext;
+  html.MediaStream? _mediaStream;
+  bool _isInitialized = false;
 
   // Getters
   bool get isWaitingState => _currentWaitingState;
@@ -31,6 +37,68 @@ class WebBlueLightDetector {
   bool get isCalibrated => _baselineCalibrated;
   double get baselineBlueLevel => _baselineBlueLevel;
   SensitivitySettings get sensitivitySettings => _sensitivitySettings;
+  bool get isInitialized => _isInitialized;
+
+  /// Initialize web camera access
+  Future<bool> initialize() async {
+    if (_isInitialized) return true;
+
+    try {
+      if (kDebugMode) {
+        print('WebBlueLightDetector: 카메라 초기화 시작');
+      }
+
+      // Create video element
+      _videoElement = html.VideoElement()
+        ..autoplay = true
+        ..muted = true
+        ..style.display = 'none'; // Hide video element
+
+      // Create canvas for frame capture
+      _canvasElement = html.CanvasElement()
+        ..width = 320
+        ..height = 240
+        ..style.display = 'none'; // Hide canvas element
+
+      _canvasContext = _canvasElement!.getContext('2d') as html.CanvasRenderingContext2D?;
+
+      // Add elements to DOM (required for MediaStream)
+      html.document.body!.append(_videoElement!);
+      html.document.body!.append(_canvasElement!);
+
+      // Request camera access
+      final constraints = {
+        'video': {
+          'width': {'ideal': 320},
+          'height': {'ideal': 240},
+          'facingMode': 'environment', // Prefer back camera
+        },
+        'audio': false,
+      };
+
+      _mediaStream = await html.window.navigator.mediaDevices!
+          .getUserMedia(constraints);
+
+      _videoElement!.srcObject = _mediaStream;
+
+      // Wait for video to be ready
+      await _videoElement!.onLoadedMetadata.first;
+
+      _isInitialized = true;
+
+      if (kDebugMode) {
+        print('WebBlueLightDetector: 카메라 초기화 완료');
+        print('비디오 크기: ${_videoElement!.videoWidth}x${_videoElement!.videoHeight}');
+      }
+
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        print('WebBlueLightDetector: 카메라 초기화 실패 - $e');
+      }
+      return false;
+    }
+  }
 
   /// Update sensitivity settings
   void updateSensitivitySettings(SensitivitySettings settings) {
@@ -42,11 +110,28 @@ class WebBlueLightDetector {
     }
   }
 
-  /// Simulate blue light detection for web platform
-  Future<WebDetectionResult> simulateBlueLight() async {
+  /// Analyze current camera frame for blue light detection
+  Future<WebDetectionResult> analyzeFrame() async {
+    if (!_isInitialized || _videoElement == null || _canvasContext == null) {
+      return WebDetectionResult.error('카메라가 초기화되지 않음');
+    }
+
     try {
-      // Generate realistic blue light intensity simulation
-      final blueIntensity = _generateSimulatedIntensity();
+      // Capture current frame from video to canvas
+      _canvasContext!.drawImage(
+        _videoElement!,
+        0, 0,
+      );
+
+      // Get image data from canvas
+      final imageData = _canvasContext!.getImageData(
+        0, 0,
+        _canvasElement!.width!,
+        _canvasElement!.height!,
+      );
+
+      // Calculate blue light intensity from RGB data
+      final blueIntensity = _calculateBlueIntensityFromRGB(imageData.data);
 
       // Add to frame history
       _frameHistory.add(blueIntensity);
@@ -54,7 +139,7 @@ class WebBlueLightDetector {
         _frameHistory.removeAt(0);
       }
 
-      // Auto-calibrate after a few frames
+      // Calibrate baseline if not done
       if (!_baselineCalibrated) {
         _calibrateBaseline(blueIntensity);
       }
@@ -69,12 +154,6 @@ class WebBlueLightDetector {
       final newState = _determineWaitingState(amplifiedIntensity);
       final stateChanged = previousState != newState;
 
-      // Track state changes for realistic timing
-      if (stateChanged) {
-        _lastStateChange = DateTime.now();
-        _simulationCycle = (_simulationCycle + 1) % 10;
-      }
-
       return WebDetectionResult(
         blueIntensity: blueIntensity,
         amplifiedIntensity: amplifiedIntensity,
@@ -85,69 +164,76 @@ class WebBlueLightDetector {
         baselineLevel: _baselineBlueLevel,
         sensitivityMultiplier: _sensitivitySettings.multiplier,
         timestamp: DateTime.now(),
-        isSimulated: true,
+        isSimulated: false, // Now using real camera data!
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Web blue light simulation error: $e');
+        print('WebBlueLightDetector: 프레임 분석 오류 - $e');
       }
       return WebDetectionResult.error(e.toString());
     }
   }
 
-  /// Generate realistic blue light intensity simulation
-  double _generateSimulatedIntensity() {
-    final now = DateTime.now();
-    final secondsOfDay = now.hour * 3600 + now.minute * 60 + now.second;
+  /// Calculate blue light intensity from RGB image data
+  double _calculateBlueIntensityFromRGB(Uint8ClampedList rgbaData) {
+    double totalBlueIntensity = 0.0;
+    int sampleCount = 0;
 
-    // Create a semi-realistic pattern with some randomness
-    // Higher intensity during certain times (simulating customer activity)
-    double baseIntensity = 0.1;
+    // Sample every 4th pixel for performance (RGBA format: 4 bytes per pixel)
+    const sampleStep = 16; // Skip 4 pixels each time
+    
+    for (int i = 0; i < rgbaData.length; i += sampleStep) {
+      if (i + 3 < rgbaData.length) {
+        final r = rgbaData[i];     // Red
+        final g = rgbaData[i + 1]; // Green  
+        final b = rgbaData[i + 2]; // Blue
+        final a = rgbaData[i + 3]; // Alpha
+        
+        // Skip transparent pixels
+        if (a < 128) continue;
 
-    // Add time-based variation (higher during business hours)
-    final hour = now.hour;
-    if (hour >= 9 && hour <= 18) {
-      baseIntensity += 0.05; // Slightly higher during business hours
+        // Calculate blue intensity relative to other colors
+        final blueIntensity = _calculatePixelBlueIntensity([r, g, b]);
+        totalBlueIntensity += blueIntensity;
+        sampleCount++;
+      }
     }
 
-    // Add periodic variation (customers come in waves)
-    final periodicVariation = sin(secondsOfDay / 60) * 0.08;
-
-    // Add some controlled randomness
-    final randomComponent = (now.millisecond % 100) / 100.0 * 0.1;
-
-    // Simulation cycles to create realistic customer patterns
-    double cycleModifier = 0.0;
-    switch (_simulationCycle % 4) {
-      case 0: // No customer
-        cycleModifier = -0.05;
-        break;
-      case 1: // Customer approaching
-        cycleModifier = 0.1;
-        break;
-      case 2: // Customer waiting
-        cycleModifier = 0.15;
-        break;
-      case 3: // Customer leaving
-        cycleModifier = 0.05;
-        break;
-    }
-
-    final result = (baseIntensity +
-            periodicVariation +
-            randomComponent +
-            cycleModifier)
-        .clamp(0.0, 0.4);
-
-    return result;
+    return sampleCount > 0 ? totalBlueIntensity / sampleCount : 0.0;
   }
 
-  /// Calibrate baseline blue level (for web, this is mostly for UI consistency)
+  /// Calculate blue intensity for a single RGB pixel
+  double _calculatePixelBlueIntensity(List<int> rgb) {
+    final r = rgb[0];
+    final g = rgb[1];
+    final b = rgb[2];
+
+    // Avoid division by zero
+    final totalIntensity = r + g + b;
+    if (totalIntensity == 0) return 0.0;
+
+    // Calculate blue ratio
+    final blueRatio = b / totalIntensity;
+
+    // Enhanced blue detection: look for pixels where blue is dominant
+    final blueAdvantage = (b - max(r, g)) / 255.0;
+    
+    // Combine ratio and advantage for better detection
+    final combinedIntensity = (blueRatio * 0.7 + max(0.0, blueAdvantage) * 0.3);
+    
+    // Apply brightness weighting (brighter blues are more significant)
+    final brightness = totalIntensity / (3 * 255.0);
+    final weightedIntensity = combinedIntensity * brightness;
+
+    return weightedIntensity.clamp(0.0, 1.0);
+  }
+
+  /// Calibrate baseline blue level
   void _calibrateBaseline(double blueIntensity) {
     _calibrationFrameCount++;
 
-    if (_calibrationFrameCount <= 10) {
-      // Faster calibration for web
+    if (_calibrationFrameCount <= 20) {
+      // Collect more frames for better baseline
       _baselineBlueLevel =
           ((_baselineBlueLevel * (_calibrationFrameCount - 1)) +
               blueIntensity) /
@@ -155,7 +241,7 @@ class WebBlueLightDetector {
     } else {
       _baselineCalibrated = true;
       if (kDebugMode) {
-        print('Web baseline calibrated: $_baselineBlueLevel');
+        print('WebBlueLightDetector: 기준값 보정 완료 - $_baselineBlueLevel');
       }
     }
   }
@@ -233,11 +319,9 @@ class WebBlueLightDetector {
     _frameHistory.clear();
     _consistentFrameCount = 0;
     _currentWaitingState = false;
-    _baselineBlueLevel = 0.15;
+    _baselineBlueLevel = 0.0;
     _baselineCalibrated = false;
     _calibrationFrameCount = 0;
-    _lastStateChange = null;
-    _simulationCycle = 0;
   }
 
   /// Get detection statistics
@@ -250,13 +334,43 @@ class WebBlueLightDetector {
       'baselineCalibrated': _baselineCalibrated,
       'calibrationFrameCount': _calibrationFrameCount,
       'confidence': _calculateConfidence(),
-      'simulationCycle': _simulationCycle,
-      'lastStateChange': _lastStateChange?.toIso8601String(),
+      'isInitialized': _isInitialized,
+      'cameraActive': _mediaStream?.active ?? false,
     };
+  }
+
+  /// Dispose resources and cleanup
+  void dispose() {
+    try {
+      // Stop media stream
+      if (_mediaStream != null) {
+        for (final track in _mediaStream!.getTracks()) {
+          track.stop();
+        }
+        _mediaStream = null;
+      }
+
+      // Remove DOM elements
+      _videoElement?.remove();
+      _canvasElement?.remove();
+
+      _videoElement = null;
+      _canvasElement = null;
+      _canvasContext = null;
+      _isInitialized = false;
+
+      if (kDebugMode) {
+        print('WebBlueLightDetector: 리소스 정리 완료');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('WebBlueLightDetector: 정리 중 오류 - $e');
+      }
+    }
   }
 }
 
-/// Result of web blue light detection simulation
+/// Result of web blue light detection using real camera data
 class WebDetectionResult {
   final double blueIntensity;
   final double amplifiedIntensity;
@@ -273,7 +387,7 @@ class WebDetectionResult {
   const WebDetectionResult({
     required this.blueIntensity,
     required this.amplifiedIntensity,
-    required this.normalizedIntensity,
+    required this.normalizedIntensity,    
     required this.isWaitingState,
     required this.stateChanged,
     required this.confidence,
@@ -294,15 +408,15 @@ class WebDetectionResult {
       baselineLevel = 0.0,
       sensitivityMultiplier = 1.0,
       timestamp = DateTime.now(),
-      isSimulated = true,
+      isSimulated = false,
       error = errorMessage;
 
   bool get hasError => error != null;
 
   String getStateDescription() {
     if (hasError) return '오류 발생';
-    if (isWaitingState) return '대기인원 있음 (웹 데모)';
-    return '대기인원 없음 (웹 데모)';
+    if (isWaitingState) return '대기인원 있음 (실제 카메라)';
+    return '대기인원 없음 (실제 카메라)';
   }
 
   @override
@@ -311,6 +425,6 @@ class WebDetectionResult {
         'amplified: ${amplifiedIntensity.toStringAsFixed(3)}, '
         'multiplier: ×${sensitivityMultiplier.toStringAsFixed(1)}, '
         'waiting: $isWaitingState, changed: $stateChanged, '
-        'confidence: ${confidence.toStringAsFixed(2)}, simulated: $isSimulated)';
+        'confidence: ${confidence.toStringAsFixed(2)}, real: ${!isSimulated})';
   }
 }

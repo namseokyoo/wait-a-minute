@@ -392,13 +392,19 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// Start web monitoring using periodic simulation
+  /// Start web monitoring using periodic real camera analysis
   Future<void> _startWebMonitoring() async {
     // Stop any existing timer
     _webMonitoringTimer?.cancel();
 
     // Reset web detector for new session
     _webDetector.reset();
+
+    // Initialize web camera
+    final cameraInitialized = await _webDetector.initialize();
+    if (!cameraInitialized) {
+      throw Exception('Failed to initialize web camera');
+    }
 
     // Start periodic monitoring for web (every 500ms)
     _webMonitoringTimer = Timer.periodic(const Duration(milliseconds: 500), (
@@ -410,7 +416,7 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
       }
 
       try {
-        // Use web-specific blue light detection simulation
+        // Use web-specific blue light detection with real camera
         await _processWebBlueLight();
       } catch (e) {
         if (kDebugMode) {
@@ -420,15 +426,15 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
     });
 
     if (kDebugMode) {
-      print('Web monitoring started with simulation-based detection');
+      print('Web monitoring started with real camera detection');
     }
   }
 
   /// Process web blue light detection using dedicated web detector
   Future<void> _processWebBlueLight() async {
     try {
-      // Use web-specific detector for realistic simulation
-      final result = await _webDetector.simulateBlueLight();
+      // Use web-specific detector for real camera analysis
+      final result = await _webDetector.analyzeFrame();
 
       if (!result.hasError) {
         // Update blue intensity and waiting state
@@ -464,7 +470,7 @@ class CameraService extends ChangeNotifier with WidgetsBindingObserver {
             'batteryLevel': _batteryLevel,
             'isBackground': _isAppInBackground,
             'platform': 'web',
-            'isSimulated': true,
+            'isSimulated': false, // Now using real camera data
           });
           _lastFirebaseUpdate = now;
         }
